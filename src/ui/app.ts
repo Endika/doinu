@@ -977,37 +977,36 @@ export function bootstrap(): void {
   // Build the song list once.
   if (songList && songList.childElementCount === 0) {
     for (const song of SONGS) {
-      const hands = songHands(song)
-      if (hands.length === 1) {
-        const btn = document.createElement('button')
-        btn.className = 'menu-btn'
-        btn.type = 'button'
-        btn.textContent = song.title
-        btn.addEventListener('click', () => playSong(song, 'R'))
-        songList.appendChild(btn)
-      } else {
-        const row = document.createElement('div')
-        row.className = 'song-row'
-        const main = document.createElement('button')
-        main.className = 'menu-btn song-main'
-        main.type = 'button'
-        main.textContent = song.title
-        main.addEventListener('click', () => playSong(song, 'R'))
-        const left = document.createElement('button')
-        left.className = 'menu-btn song-hand'
-        left.type = 'button'
-        left.textContent = '🤚'
-        left.title = 'Left hand'
-        left.addEventListener('click', () => playSong(song, 'L'))
-        const both = document.createElement('button')
-        both.className = 'menu-btn song-hand'
-        both.type = 'button'
-        both.textContent = '🙌'
-        both.title = 'Both hands'
-        both.addEventListener('click', () => playSong(song, 'both'))
-        row.append(main, left, both)
-        songList.appendChild(row)
+      // Uniform card per song: a title line, then an equal-width row of hand
+      // buttons (one "Play" for right-hand-only songs, or Right/Left/Both).
+      const card = document.createElement('div')
+      card.className = 'song-card'
+
+      const title = document.createElement('div')
+      title.className = 'song-title'
+      title.textContent = song.title
+      card.appendChild(title)
+
+      const handsRow = document.createElement('div')
+      handsRow.className = 'song-hands'
+      const addHand = (label: string, sel: HandSelection): void => {
+        const b = document.createElement('button')
+        b.className = 'hand-btn'
+        b.type = 'button'
+        b.dataset.hand = sel
+        b.textContent = label
+        b.addEventListener('click', () => playSong(song, sel))
+        handsRow.appendChild(b)
       }
+      if (songHands(song).length === 1) {
+        addHand('▶ Play', 'R')
+      } else {
+        addHand('👉 Right', 'R')
+        addHand('👈 Left', 'L')
+        addHand('🙌 Both', 'both')
+      }
+      card.appendChild(handsRow)
+      songList.appendChild(card)
     }
   }
   songsBack?.addEventListener('click', () => {
