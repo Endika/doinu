@@ -3,17 +3,23 @@
   <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <meta name="theme-color" content="#0a0a0f" />
+    <meta name="theme-color" content="#7c5cff" />
     <title>Doinu</title>
     <style>
+      :root {
+        --font: 'Baloo 2', 'Fredoka', 'Nunito', system-ui, 'Segoe UI', sans-serif;
+        --ink: #2a2350;
+        --sky: linear-gradient(160deg, #5ec8ff 0%, #a07bff 55%, #ff8fd6 100%);
+      }
       html,
       body {
         margin: 0;
         height: 100%;
-        background: #0a0a0f;
-        color: #e8e8ef;
-        font-family: system-ui, sans-serif;
+        background: var(--sky);
+        color: var(--ink);
+        font-family: var(--font);
         overflow: hidden;
+        -webkit-tap-highlight-color: transparent;
       }
       #app {
         display: flex;
@@ -21,16 +27,22 @@
         width: 100vw;
         height: 100vh;
       }
+      /* The play field: a rich, lively violet so the coloured notes pop —
+         bright and friendly, never a black void. */
       #stage {
         display: block;
         flex: 1 1 auto;
         width: 100%;
         min-height: 0;
+        background: linear-gradient(180deg, #4634a6 0%, #6a47cf 60%, #8a5be0 100%);
       }
+      /* A cheerful shelf under the keyboard. */
       #keys {
         display: block;
         flex: 0 0 26vh;
         width: 100%;
+        background: linear-gradient(180deg, #ffd86b 0%, #ffc24d 100%);
+        box-shadow: inset 0 4px 0 rgba(255, 255, 255, 0.5);
       }
       #status {
         position: fixed;
@@ -39,49 +51,73 @@
         transform: translateX(-50%);
         text-align: center;
         white-space: pre-line;
-        font-size: 1rem;
+        font-size: 1.15rem;
+        font-weight: 600;
+        color: #fff;
         pointer-events: none;
-        text-shadow: 0 1px 4px rgba(0, 0, 0, 0.8);
+        text-shadow: 0 2px 6px rgba(40, 20, 90, 0.55);
+      }
+      /* Round, chunky floating buttons (report + back). */
+      #report-toggle,
+      #back-menu {
+        position: fixed;
+        z-index: 25;
+        border: none;
+        border-radius: 999px;
+        background: #fff;
+        color: var(--ink);
+        font-family: var(--font);
+        font-weight: 700;
+        cursor: pointer;
+        box-shadow: 0 6px 16px rgba(60, 30, 120, 0.35);
+        transition: transform 0.12s ease;
+      }
+      #report-toggle:active,
+      #back-menu:active {
+        transform: scale(0.92);
       }
       #report-toggle {
-        position: fixed;
-        top: 0.75rem;
-        right: 0.75rem;
-        z-index: 20;
-        width: 2.5rem;
-        height: 2.5rem;
-        border: 1px solid rgba(232, 232, 239, 0.25);
-        border-radius: 0.5rem;
-        background: rgba(20, 20, 30, 0.85);
-        color: #e8e8ef;
-        font-size: 1.2rem;
+        top: 0.9rem;
+        right: 0.9rem;
+        width: 3rem;
+        height: 3rem;
+        font-size: 1.4rem;
         line-height: 1;
-        cursor: pointer;
       }
-      #report-toggle:hover {
-        background: rgba(40, 40, 60, 0.95);
+      #back-menu {
+        top: 0.9rem;
+        left: 0.9rem;
+        padding: 0.7rem 1.2rem;
+        font-size: 1.05rem;
+      }
+      #back-menu.hidden {
+        display: none;
       }
       #report {
         position: fixed;
-        top: 3.5rem;
-        right: 0.75rem;
-        z-index: 20;
+        top: 4.2rem;
+        right: 0.9rem;
+        z-index: 25;
         display: none;
-        max-width: min(90vw, 32rem);
+        max-width: min(92vw, 34rem);
         max-height: 70vh;
         overflow: auto;
-        padding: 0.75rem 1rem;
-        border: 1px solid rgba(232, 232, 239, 0.25);
-        border-radius: 0.5rem;
-        background: rgba(15, 15, 24, 0.96);
-        color: #e8e8ef;
-        font-size: 0.85rem;
-        line-height: 1.5;
-        box-shadow: 0 8px 24px rgba(0, 0, 0, 0.6);
+        padding: 1rem 1.2rem;
+        border-radius: 1.1rem;
+        background: #fff;
+        color: var(--ink);
+        font-size: 0.95rem;
+        line-height: 1.6;
+        box-shadow: 0 14px 36px rgba(60, 30, 120, 0.4);
       }
       #report.open {
         display: block;
       }
+      #report > div {
+        padding: 0.35rem 0;
+        border-bottom: 1px solid rgba(120, 90, 200, 0.16);
+      }
+      /* ---- Start screen: the first impression, made to invite play ---- */
       #menu {
         position: fixed;
         inset: 0;
@@ -90,64 +126,81 @@
         flex-direction: column;
         align-items: center;
         justify-content: center;
-        gap: 1.5rem;
-        background: rgba(10, 10, 15, 0.97);
+        gap: 1.25rem;
+        background: var(--sky);
       }
       #menu.hidden {
         display: none;
       }
+      #menu .menu-card {
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        gap: 1.1rem;
+        width: min(86vw, 24rem);
+        padding: 1.75rem 1.5rem 2rem;
+        border-radius: 1.75rem;
+        background: rgba(255, 255, 255, 0.92);
+        box-shadow: 0 20px 50px rgba(60, 30, 120, 0.35);
+      }
       #menu .menu-title {
         margin: 0;
-        font-size: 2.5rem;
-        font-weight: 700;
-        letter-spacing: 0.08em;
-        color: #e8e8ef;
+        font-size: 3rem;
+        font-weight: 800;
+        color: var(--ink);
+        animation: bob 2.4s ease-in-out infinite;
+      }
+      #menu .menu-sub {
+        margin: -0.5rem 0 0.25rem;
+        font-size: 1.1rem;
+        font-weight: 600;
+        color: #8a5be0;
       }
       #menu .menu-list {
         display: flex;
         flex-direction: column;
-        gap: 0.75rem;
-        width: min(80vw, 22rem);
+        gap: 0.8rem;
+        width: 100%;
       }
       .menu-btn {
-        padding: 0.85rem 1.25rem;
-        border: 1px solid rgba(232, 232, 239, 0.25);
-        border-radius: 0.6rem;
-        background: rgba(20, 20, 30, 0.85);
-        color: #e8e8ef;
-        font-size: 1.05rem;
+        padding: 1rem 1.25rem;
+        border: none;
+        border-radius: 999px;
+        color: #fff;
+        font-family: var(--font);
+        font-size: 1.2rem;
+        font-weight: 700;
         cursor: pointer;
-        transition: background 0.15s ease;
+        box-shadow: 0 6px 0 rgba(0, 0, 0, 0.14);
+        transition: transform 0.12s ease, box-shadow 0.12s ease;
       }
       .menu-btn:hover {
-        background: rgba(40, 40, 60, 0.95);
+        transform: translateY(-2px);
       }
+      .menu-btn:active {
+        transform: translateY(3px);
+        box-shadow: 0 2px 0 rgba(0, 0, 0, 0.14);
+      }
+      .menu-btn[data-activity='melody'] { background: #ff7eb3; }
+      .menu-btn[data-activity='echo'] { background: #4fc3f7; }
+      .menu-btn[data-activity='c-major-up'] { background: #ffa14a; }
+      .menu-btn[data-activity='c-major-updown'] { background: #b07bff; }
+      .menu-btn[data-activity='free'] { background: #4cd4a0; }
       #menu .menu-status {
         min-height: 1.2rem;
-        max-width: min(80vw, 22rem);
+        max-width: min(86vw, 24rem);
         text-align: center;
-        font-size: 0.9rem;
-        color: #b8b8c4;
-      }
-      #back-menu {
-        position: fixed;
-        top: 0.75rem;
-        left: 0.75rem;
-        z-index: 25;
-        padding: 0.5rem 0.9rem;
-        border: 1px solid rgba(232, 232, 239, 0.25);
-        border-radius: 0.5rem;
-        background: rgba(20, 20, 30, 0.85);
-        color: #e8e8ef;
         font-size: 1rem;
-        line-height: 1;
-        cursor: pointer;
+        font-weight: 600;
+        color: #fff;
+        text-shadow: 0 2px 6px rgba(40, 20, 90, 0.45);
       }
-      #back-menu:hover {
-        background: rgba(40, 40, 60, 0.95);
+      @keyframes bob {
+        0%, 100% { transform: translateY(0); }
+        50% { transform: translateY(-8px); }
       }
-      #back-menu.hidden {
-        display: none;
+      @media (prefers-reduced-motion: reduce) {
+        #menu .menu-title { animation: none; }
       }
     </style>
   </head>
@@ -160,13 +213,16 @@
     <button id="report-toggle" type="button" aria-label="Toggle progress report">📊</button>
     <div id="report" aria-live="polite"></div>
     <div id="menu">
-      <h1 class="menu-title">Doinu</h1>
-      <div class="menu-list">
-        <button class="menu-btn" type="button" data-activity="melody">Melody</button>
-        <button class="menu-btn" type="button" data-activity="echo">Echo</button>
-        <button class="menu-btn" type="button" data-activity="c-major-up">Scale — C Major (up)</button>
-        <button class="menu-btn" type="button" data-activity="c-major-updown">Scale — C Major (up/down)</button>
-        <button class="menu-btn" type="button" data-activity="free">Free play</button>
+      <div class="menu-card">
+        <h1 class="menu-title">🎹 Doinu</h1>
+        <p class="menu-sub">¡A jugar! 🎶</p>
+        <div class="menu-list">
+          <button class="menu-btn" type="button" data-activity="melody">🎵 Melody</button>
+          <button class="menu-btn" type="button" data-activity="echo">🔁 Echo</button>
+          <button class="menu-btn" type="button" data-activity="c-major-up">🪜 Scale up</button>
+          <button class="menu-btn" type="button" data-activity="c-major-updown">🎢 Scale up &amp; down</button>
+          <button class="menu-btn" type="button" data-activity="free">✨ Free play</button>
+        </div>
       </div>
       <div id="menu-status" class="menu-status"></div>
     </div>
