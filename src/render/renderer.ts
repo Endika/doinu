@@ -142,16 +142,17 @@ export class Renderer {
     const color = colorForPitchClass(noteFromMidi(t.midi).pitchClass)
 
     ctx.save()
-    // Hand differentiation: right hand full opacity, left hand dimmed.
-    ctx.globalAlpha = t.hand === 'R' ? 0.95 : 0.6
+    // Both hands are vivid (keep the pitch colour as the learning cue). The hands
+    // are told apart by a border, not by dimness: the left hand gets a bold white
+    // outline so it stays clearly visible.
+    ctx.globalAlpha = t.hand === 'R' ? 0.97 : 0.92
     ctx.fillStyle = color
     this.roundedRect(ctx, x, topY, width, height, Math.min(6, width / 2))
     ctx.fill()
-    // Left hand gets a thin outline to further distinguish it.
     if (t.hand === 'L') {
-      ctx.globalAlpha = 0.9
-      ctx.lineWidth = 2
-      ctx.strokeStyle = color
+      ctx.globalAlpha = 1
+      ctx.lineWidth = 3
+      ctx.strokeStyle = '#ffffff'
       ctx.stroke()
     }
     ctx.restore()

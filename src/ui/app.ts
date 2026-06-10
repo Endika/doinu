@@ -169,7 +169,7 @@ function runChart(
   // Falling-notes geometry + a song-relative clock whose lead-in equals the time
   // a note takes to fall the full height, so the first note enters at the very
   // top of the stage and reaches the hit line after a full, reactable run.
-  const hitLineY = stageCanvas ? stageCanvas.height * 0.88 : 0
+  const hitLineY = stageCanvas ? stageCanvas.height * 0.94 : 0
   const lead = leadInMs(hitLineY, PX_PER_MS)
   const origin = perfClock.now() + lead
   const songClock = offsetClock(perfClock, origin)
@@ -235,7 +235,7 @@ function runChartWaiting(
   const stageCtx = stageCanvas?.getContext('2d') ?? null
   const keysCtx = keysCanvas?.getContext('2d') ?? null
 
-  const hitLineY = stageCanvas ? stageCanvas.height * 0.88 : 0
+  const hitLineY = stageCanvas ? stageCanvas.height * 0.94 : 0
   const lead = leadInMs(hitLineY, PX_PER_MS)
   const clock = new PausableClock(perfClock)
   clock.setTo(-lead)
