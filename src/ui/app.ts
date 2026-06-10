@@ -122,10 +122,17 @@ function findExercise(id: string): Exercise {
   return CURRICULUM.find(e => e.id === id) ?? CURRICULUM[0]
 }
 
+/** Encouraging-but-honest praise scaled to the score (no "Great!" for a 0%). */
+function praise(pct: number): string {
+  if (pct >= 90) return `Amazing! ${pct}% 🌟`
+  if (pct >= 70) return `Great! ${pct}% 👏`
+  if (pct >= 40) return `Good try! ${pct}% 💪`
+  if (pct > 0) return `Keep going! ${pct}% 🎵`
+  return `Let's try again! 🙈`
+}
+
 function formatSummary(s: Summary): string {
-  const pct = Math.round(s.accuracy * 100)
-  const emoji = pct >= 90 ? '🌟' : pct >= 60 ? '👏' : '💪'
-  return `Great! ${pct}% ${emoji}`
+  return praise(Math.round(s.accuracy * 100))
 }
 
 // DOM + collaborators shared by every exercise run within one bootstrap.
@@ -569,7 +576,7 @@ export function bootstrap(): void {
         summary: { accuracy, meanTimingDevMs: 0, meanFindMs: 0, tempoBpm: 0 },
       })
       refreshReport()
-      if (d.status) d.status.textContent = `Great! ${Math.round(accuracy * 100)}% 🌟`
+      if (d.status) d.status.textContent = praise(Math.round(accuracy * 100))
       phrase = ECHO_PHRASES[echoIndex % ECHO_PHRASES.length]
       echoIndex++
       window.setTimeout(() => {
@@ -813,7 +820,8 @@ export function bootstrap(): void {
       })
       refreshReport()
       if (d.status) {
-        d.status.textContent = `Great! ${Math.round(accuracy * 100)}% · ${Math.round(meanFindMs)}ms 🌟`
+        const pct = Math.round(accuracy * 100)
+        d.status.textContent = pct > 0 ? `${praise(pct)} · ${Math.round(meanFindMs)}ms` : praise(pct)
       }
       window.setTimeout(() => {
         if (!running) return
