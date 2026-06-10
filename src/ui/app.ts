@@ -14,6 +14,8 @@ import { NoteFindGame, NOTE_FIND_NOTES } from '../modes/note-find-mode'
 import type { Mode } from '../modes/mode'
 import { Synth } from '../audio/synth'
 import { CURRICULUM, type Exercise } from '../content/curriculum'
+import { SONGS, type Song } from '../content/songs'
+import { SongMode, songHands, type HandSelection } from '../modes/song-mode'
 import { MetricsStore } from '../progress/metrics-store'
 import { buildMasteryMap, type MasteryEntry, type MasteryState } from '../progress/mastery'
 import { buildProgressReport, renderProgressReport } from '../progress/progress-view'
@@ -199,6 +201,86 @@ function runChart(
   rafId = requestAnimationFrame(loop)
 
   // Returns a stop() so the caller's ← Menu can abort mid-run.
+  return (): void => {
+    running = false
+    cancelAnimationFrame(rafId)
+    engine.stop()
+  }
+}
+
+/**
+ * Like `runChart`, but in PRACTICE (wait) mode: the falling notes freeze at the
+ * hit line on the earliest unplayed note until the learner plays it, then resume.
+ * Uses a `PausableClock` and a `ClockStampAdapter` so input matching stays correct
+ * across pauses. Returns a stop() so the caller's ← Menu can abort mid-run.
+ */
+function runChartWaiting(
+  mode: Mode,
+  title: string,
+  deps: ExerciseDeps,
+  onComplete: (engine: Engine) => void,
+): () => void {
+  const { stageCanvas, keysCanvas, status, selected } = deps
+  const chart = mode.buildChart()
+
+  sizeCanvas(stageCanvas)
+  sizeCanvas(keysCanvas)
+  const stageCtx = stageCanvas?.getContext('2d') ?? null
+  const keysCtx = keysCanvas?.getContext('2d') ?? null
+
+  const hitLineY = stageCanvas ? stageCanvas.height * 0.88 : 0
+  const lead = leadInMs(hitLineY, PX_PER_MS)
+  const clock = new PausableClock(perfClock)
+  clock.setTo(-lead)
+  clock.resume()
+
+  const adapter = new ClockStampAdapter(selected, clock)
+  const engine = new Engine(chart, adapter, clock, { windowMs: WINDOW_MS })
+  const renderer = new Renderer(stageCtx, { hitLineY, pxPerMs: PX_PER_MS })
+  const keyboard = new Keyboard(keysCtx)
+
+  if (status) status.textContent = title
+  engine.start()
+
+  const lastEndMs = chart.targets.length
+    ? Math.max(...chart.targets.map(t => t.startMs + t.durMs))
+    : 0
+
+  let running = true
+  let rafId = 0
+  const loop = (): void => {
+    if (!running) return
+    engine.tick()
+
+    // The wait: pause at the earliest unplayed note's time until it is played.
+    const pending = engine.pendingTargets()
+    if (pending.length > 0) {
+      const nextStart = Math.min(...pending.map(t => t.startMs))
+      if (clock.now() >= nextStart) {
+        clock.setTo(nextStart) // clamp the score exactly at the hit line
+        clock.pause()
+      } else {
+        clock.resume()
+      }
+    } else {
+      clock.resume()
+    }
+
+    const frame = engine.frameState()
+    renderer.draw(frame)
+    const expected = expectedNotesAt(frame.targets, frame.nowMs, WINDOW_MS)
+    keyboard.draw(frame.activeNotes, expected)
+
+    if (clock.now() >= lastEndMs + 800) {
+      running = false
+      engine.stop()
+      onComplete(engine)
+      return
+    }
+    rafId = requestAnimationFrame(loop)
+  }
+  rafId = requestAnimationFrame(loop)
+
   return (): void => {
     running = false
     cancelAnimationFrame(rafId)
@@ -814,78 +896,21 @@ export function bootstrap(): void {
     const playOne = (id: string): void => {
       if (!alive) return
       const exercise = findExercise(id)
-      const chart = new MelodyMode(exercise).buildChart()
-
-      sizeCanvas(stageCanvas)
-      sizeCanvas(keysCanvas)
-      const stageCtx = stageCanvas?.getContext('2d') ?? null
-      const keysCtx = keysCanvas?.getContext('2d') ?? null
-
-      const hitLineY = stageCanvas ? stageCanvas.height * 0.88 : 0
-      const lead = leadInMs(hitLineY, PX_PER_MS)
-      const clock = new PausableClock(perfClock)
-      clock.setTo(-lead)
-      clock.resume()
-
-      const adapter = new ClockStampAdapter(selected, clock)
-      const engine = new Engine(chart, adapter, clock, { windowMs: WINDOW_MS })
-      const renderer = new Renderer(stageCtx, { hitLineY, pxPerMs: PX_PER_MS })
-      const keyboard = new Keyboard(keysCtx)
-
-      if (status) status.textContent = `${exercise.title} 🐢`
-      engine.start()
-
-      const lastEndMs = chart.targets.length
-        ? Math.max(...chart.targets.map(t => t.startMs + t.durMs))
-        : 0
-
-      let rafId = 0
-      const loop = (): void => {
+      stopRun = runChartWaiting(new MelodyMode(exercise), `${exercise.title} 🐢`, deps, engine => {
         if (!alive) return
-        engine.tick()
-
-        // The wait: pause at the earliest unplayed note's time until it is played.
-        const pending = engine.pendingTargets()
-        if (pending.length > 0) {
-          const nextStart = Math.min(...pending.map(t => t.startMs))
-          if (clock.now() >= nextStart) {
-            clock.setTo(nextStart) // clamp the score exactly at the hit line
-            clock.pause()
-          } else {
-            clock.resume()
-          }
-        } else {
-          clock.resume()
-        }
-
-        const frame = engine.frameState()
-        renderer.draw(frame)
-        const expected = expectedNotesAt(frame.targets, frame.nowMs, WINDOW_MS)
-        keyboard.draw(frame.activeNotes, expected)
-
-        if (clock.now() >= lastEndMs + 800) {
-          engine.stop()
-          store.record({
-            exerciseId: `practice:${exercise.id}`,
-            timestamp: Date.now(),
-            summary: engine.summary(),
-          })
-          refreshReport()
-          if (status) status.textContent = formatSummary(engine.summary())
-          timer = window.setTimeout(() => {
-            if (!alive) return
-            const nextMap = buildMasteryMap(CURRICULUM, sid => store.sessionsFor(sid))
-            playOne(pickCurrentExerciseId(nextMap))
-          }, 2500)
-          return
-        }
-        rafId = requestAnimationFrame(loop)
-      }
-      stopRun = (): void => {
-        engine.stop()
-        cancelAnimationFrame(rafId)
-      }
-      rafId = requestAnimationFrame(loop)
+        store.record({
+          exerciseId: `practice:${exercise.id}`,
+          timestamp: Date.now(),
+          summary: engine.summary(),
+        })
+        refreshReport()
+        if (status) status.textContent = formatSummary(engine.summary())
+        timer = window.setTimeout(() => {
+          if (!alive) return
+          const nextMap = buildMasteryMap(CURRICULUM, sid => store.sessionsFor(sid))
+          playOne(pickCurrentExerciseId(nextMap))
+        }, 2500)
+      })
     }
 
     playOne(startId)
@@ -896,6 +921,92 @@ export function bootstrap(): void {
     startPractice(pickCurrentExerciseId(map))
   }
 
+  // Songs library: a browseable list of public-domain songs, each playable in
+  // practice (wait) mode for the chosen hand(s). The in-song ← Menu returns to the
+  // song list; the list's own back returns to the main menu.
+  const songsOverlay = document.getElementById('songs')
+  const songList = document.getElementById('song-list')
+  const songsBack = document.getElementById('songs-back')
+
+  const showSongs = (): void => {
+    if (status) status.textContent = ''
+    songsOverlay?.classList.remove('hidden')
+  }
+  const hideSongs = (): void => songsOverlay?.classList.add('hidden')
+
+  const playSong = (song: Song, sel: HandSelection): void => {
+    synth.resume()
+    hideSongs()
+    let alive = true
+    let stopRun: (() => void) | null = null
+    let timer = 0
+    const exit = (): void => {
+      if (!alive) return
+      alive = false
+      stopRun?.()
+      window.clearTimeout(timer)
+      backBtn?.removeEventListener('click', exit)
+      backBtn?.classList.add('hidden')
+      if (status) status.textContent = ''
+      showSongs() // return to the song list
+    }
+    backBtn?.addEventListener('click', exit)
+    backBtn?.classList.remove('hidden')
+
+    stopRun = runChartWaiting(new SongMode(song, sel), song.title, deps, engine => {
+      if (!alive) return
+      store.record({
+        exerciseId: `song:${song.id}:${sel}`,
+        timestamp: Date.now(),
+        summary: engine.summary(),
+      })
+      refreshReport()
+      if (status) status.textContent = formatSummary(engine.summary())
+      timer = window.setTimeout(() => exit(), 2800)
+    })
+  }
+
+  // Build the song list once.
+  if (songList && songList.childElementCount === 0) {
+    for (const song of SONGS) {
+      const hands = songHands(song)
+      if (hands.length === 1) {
+        const btn = document.createElement('button')
+        btn.className = 'menu-btn'
+        btn.type = 'button'
+        btn.textContent = song.title
+        btn.addEventListener('click', () => playSong(song, 'R'))
+        songList.appendChild(btn)
+      } else {
+        const row = document.createElement('div')
+        row.className = 'song-row'
+        const main = document.createElement('button')
+        main.className = 'menu-btn song-main'
+        main.type = 'button'
+        main.textContent = song.title
+        main.addEventListener('click', () => playSong(song, 'R'))
+        const left = document.createElement('button')
+        left.className = 'menu-btn song-hand'
+        left.type = 'button'
+        left.textContent = '🤚'
+        left.title = 'Left hand'
+        left.addEventListener('click', () => playSong(song, 'L'))
+        const both = document.createElement('button')
+        both.className = 'menu-btn song-hand'
+        both.type = 'button'
+        both.textContent = '🙌'
+        both.title = 'Both hands'
+        both.addEventListener('click', () => playSong(song, 'both'))
+        row.append(main, left, both)
+        songList.appendChild(row)
+      }
+    }
+  }
+  songsBack?.addEventListener('click', () => {
+    hideSongs()
+    showMenu()
+  })
+
   // Wire the menu buttons. A click is the user gesture that may start audio.
   const buttons = document.querySelectorAll<HTMLButtonElement>('.menu-btn')
   buttons.forEach(btn => {
@@ -905,6 +1016,7 @@ export function bootstrap(): void {
       hideMenu()
       const activity = btn.dataset.activity
       if (activity === 'melody') resumeMelody()
+      else if (activity === 'songs') showSongs()
       else if (activity === 'practice') resumePractice()
       else if (activity === 'free') startFreePlay(deps, synth)
       else if (activity === 'echo') startEcho(deps, synth)
