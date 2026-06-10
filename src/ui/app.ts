@@ -313,8 +313,7 @@ export function bootstrap(): void {
   const menu = document.getElementById('menu')
   const menuStatus = document.getElementById('menu-status')
 
-  setupReportToggle()
-  const reportEl = document.getElementById('report')
+  const reportEl = document.getElementById('progress-content')
 
   // Version footer on the start screen (matches the sister apps' format).
   const versionEl = document.getElementById('version')
@@ -1014,6 +1013,18 @@ export function bootstrap(): void {
     showMenu()
   })
 
+  // Progress screen: the parent-facing report, opened from the menu.
+  const progressOverlay = document.getElementById('progress')
+  const progressBack = document.getElementById('progress-back')
+  const openProgress = (): void => {
+    refreshReport()
+    progressOverlay?.classList.remove('hidden')
+  }
+  progressBack?.addEventListener('click', () => {
+    progressOverlay?.classList.add('hidden')
+    showMenu()
+  })
+
   // Wire the MAIN menu buttons only (those with a data-activity). NOT the song
   // list buttons — they are also `.menu-btn` but have their own handlers; a broad
   // `.menu-btn` selector double-bound them and fired startScale('') over the song.
@@ -1026,6 +1037,7 @@ export function bootstrap(): void {
       const activity = btn.dataset.activity
       if (activity === 'melody') resumeMelody()
       else if (activity === 'songs') showSongs()
+      else if (activity === 'progress') openProgress()
       else if (activity === 'practice') resumePractice()
       else if (activity === 'free') startFreePlay(deps, synth)
       else if (activity === 'echo') startEcho(deps, synth)
@@ -1033,16 +1045,6 @@ export function bootstrap(): void {
       else if (activity === 'notefind') startNoteFind(deps, synth)
       else startScale(activity ?? '')
     })
-  })
-}
-
-function setupReportToggle(): void {
-  if (typeof document === 'undefined') return
-  const toggle = document.getElementById('report-toggle')
-  const panel = document.getElementById('report')
-  if (!toggle || !panel) return
-  toggle.addEventListener('click', () => {
-    panel.classList.toggle('open')
   })
 }
 

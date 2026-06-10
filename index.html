@@ -216,8 +216,10 @@
       .menu-btn[data-activity='melody'] { background: #ff7eb3; }
       .menu-btn[data-activity='songs'] { background: #ff6b9d; }
       .menu-btn[data-activity='practice'] { background: #7c83ff; }
-      /* Songs overlay: reuses the menu look; a scrollable list of song rows. */
-      #songs {
+      .menu-btn[data-activity='progress'] { background: #ffb454; }
+      /* Songs / Progress overlays: reuse the menu look; scrollable content. */
+      #songs,
+      #progress {
         position: fixed;
         inset: 0;
         z-index: 30;
@@ -227,11 +229,35 @@
         justify-content: center;
         background: var(--sky);
       }
-      #songs.hidden {
+      #songs.hidden,
+      #progress.hidden {
         display: none;
       }
-      #songs .menu-card {
+      #songs .menu-card,
+      #progress .menu-card {
         max-height: 86vh;
+      }
+      .progress-content {
+        width: 100%;
+        overflow-y: auto;
+        max-height: 62vh;
+        text-align: left;
+        color: var(--ink);
+        font-size: 0.95rem;
+        line-height: 1.5;
+      }
+      .progress-content > div {
+        padding: 0.4rem 0.2rem;
+        border-bottom: 1px solid rgba(120, 90, 200, 0.16);
+      }
+      .progress-content:empty::before {
+        content: 'Play a little and your progress shows up here ✨';
+        color: #8a5be0;
+        font-weight: 600;
+      }
+      #progress-back {
+        margin-top: 0.6rem;
+        background: #6d5dfc;
       }
       #song-list {
         overflow-y: auto;
@@ -328,8 +354,6 @@
       <canvas id="keys"></canvas>
     </div>
     <div id="status"></div>
-    <button id="report-toggle" type="button" aria-label="Toggle progress report">📊</button>
-    <div id="report" aria-live="polite"></div>
     <div id="menu">
       <div class="menu-card">
         <h1 class="menu-title">🎹 Doinu</h1>
@@ -338,6 +362,7 @@
           <button class="menu-btn" type="button" data-activity="melody">🎵 Melody</button>
           <button class="menu-btn" type="button" data-activity="songs">🎶 Songs</button>
           <button class="menu-btn" type="button" data-activity="practice">🐢 Practice (wait)</button>
+          <button class="menu-btn" type="button" data-activity="progress">📊 Progress</button>
           <button class="menu-btn" type="button" data-activity="echo">🔁 Echo</button>
           <button class="menu-btn" type="button" data-activity="memory">🧠 Memory</button>
           <button class="menu-btn" type="button" data-activity="notefind">🔎 Find the note</button>
@@ -355,6 +380,14 @@
         <p class="menu-sub">Pick a song 🎹</p>
         <div id="song-list" class="menu-list"></div>
         <button id="songs-back" class="menu-btn" type="button">← Menu</button>
+      </div>
+    </div>
+    <div id="progress" class="hidden">
+      <div class="menu-card">
+        <h1 class="menu-title">📊 Progress</h1>
+        <p class="menu-sub">How you're doing 🌟</p>
+        <div id="progress-content" class="progress-content"></div>
+        <button id="progress-back" class="menu-btn" type="button">← Menu</button>
       </div>
     </div>
     <button id="back-menu" class="hidden" type="button">← Menu</button>
