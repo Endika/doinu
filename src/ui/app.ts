@@ -8,6 +8,9 @@ import { Renderer, leadInMs, expectedNotesAt } from '../render/renderer'
 import { Keyboard } from '../render/keyboard'
 import { MelodyMode } from '../modes/melody-mode'
 import { CURRICULUM, type Exercise } from '../content/curriculum'
+import { MetricsStore } from '../progress/metrics-store'
+import { buildMasteryMap, type MasteryEntry, type MasteryState } from '../progress/mastery'
+import { buildProgressReport, renderProgressReport } from '../progress/progress-view'
 
 /** Hit-window half-width (ms) shared by the engine matcher and the on-screen guide. */
 const WINDOW_MS = 150
@@ -65,6 +68,18 @@ export function selectAdapter(env: Env): SelectedAdapter {
   return new NullAdapter()
 }
 
+/**
+ * Pure: pick which exercise to play now. Resume at the first `inProgress`
+ * exercise; if every exercise is `mastered`, fall back to the LAST exercise id
+ * (free replay). Assumes a non-empty map (the curriculum is non-empty, and
+ * index 0 is never locked, so there is always a non-locked entry).
+ */
+export function pickCurrentExerciseId(map: MasteryEntry[]): string {
+  const inProgress = map.find(e => e.state === 'inProgress')
+  if (inProgress) return inProgress.exerciseId
+  return map[map.length - 1].exerciseId
+}
+
 const STATUS_MESSAGES: Record<string, string> = {
   'input.noMidiMicLater':
     'No MIDI keyboard detected. Microphone input is coming in Fase 2.',
@@ -74,7 +89,7 @@ function statusMessage(key: string): string {
   return STATUS_MESSAGES[key] ?? key
 }
 
-function pickExercise(id = 'first-three'): Exercise {
+function findExercise(id: string): Exercise {
   return CURRICULUM.find(e => e.id === id) ?? CURRICULUM[0]
 }
 
@@ -86,31 +101,31 @@ function formatSummary(s: Summary): string {
     `Accuracy: ${accuracy}`,
     `Find speed: ${findSpeed}`,
     `Timing: ±${timing}`,
+    '',
+    'Tap or press a key to continue.',
   ].join('\n')
 }
 
+// DOM + collaborators shared by every exercise run within one bootstrap.
+interface ExerciseDeps {
+  stageCanvas: HTMLCanvasElement | null
+  keysCanvas: HTMLCanvasElement | null
+  status: HTMLElement | null
+  selected: SelectedAdapter
+}
+
 /**
- * Real browser entry point. Reads the canvas, selects the input adapter,
- * builds the first exercise and drives the engine + renderer to completion.
- * Guarded so importing this module in node never touches the DOM.
+ * Set up and drive a single exercise to completion. Owns the song-relative
+ * clock (with lead-in), the `SongTimeAdapter`, the engine, renderer, keyboard
+ * and rAF loop. Calls `onComplete(engine)` once when the run ends so the caller
+ * can persist the attempt, refresh progress and advance.
  */
-export function bootstrap(): void {
-  if (typeof document === 'undefined') return
-
-  const stageCanvas = document.getElementById('stage') as HTMLCanvasElement | null
-  const keysCanvas = document.getElementById('keys') as HTMLCanvasElement | null
-  const status = ensureStatusEl()
-
-  const env: Env = { hasWebMidi: 'requestMIDIAccess' in navigator }
-  const selected = selectAdapter(env)
-
-  // No real input source: show the status message instead of starting.
-  if (selected.statusKey) {
-    if (status) status.textContent = statusMessage(selected.statusKey)
-    return
-  }
-
-  const exercise = pickExercise()
+function runExercise(
+  exercise: Exercise,
+  deps: ExerciseDeps,
+  onComplete: (engine: Engine) => void,
+): void {
+  const { stageCanvas, keysCanvas, status, selected } = deps
   const chart = new MelodyMode(exercise).buildChart()
 
   sizeCanvas(stageCanvas)
@@ -148,12 +163,89 @@ export function bootstrap(): void {
 
     if (songClock.now() >= lastEndMs + 1500) {
       engine.stop()
-      if (status) status.textContent = formatSummary(engine.summary())
+      onComplete(engine)
       return
     }
     requestAnimationFrame(loop)
   }
   requestAnimationFrame(loop)
+}
+
+/**
+ * Real browser entry point. Reads the canvases, selects the input adapter,
+ * resumes at the right exercise from stored progress, and drives the engine +
+ * renderer to completion — persisting each attempt, tracking mastery, refreshing
+ * the parent report and advancing on a tap. Guarded so importing this module in
+ * node never touches the DOM.
+ */
+export function bootstrap(): void {
+  if (typeof document === 'undefined') return
+
+  const stageCanvas = document.getElementById('stage') as HTMLCanvasElement | null
+  const keysCanvas = document.getElementById('keys') as HTMLCanvasElement | null
+  const status = ensureStatusEl()
+
+  setupReportToggle()
+  const reportEl = document.getElementById('report')
+
+  const env: Env = { hasWebMidi: 'requestMIDIAccess' in navigator }
+  const selected = selectAdapter(env)
+
+  // No real input source: show the status message instead of starting.
+  if (selected.statusKey) {
+    if (status) status.textContent = statusMessage(selected.statusKey)
+    return
+  }
+
+  const store = new MetricsStore(window.localStorage)
+  const deps: ExerciseDeps = { stageCanvas, keysCanvas, status, selected }
+
+  const refreshReport = (): void => {
+    const map = buildMasteryMap(CURRICULUM, id => store.sessionsFor(id))
+    const stateFor = (id: string): MasteryState =>
+      map.find(e => e.exerciseId === id)?.state ?? 'locked'
+    const report = buildProgressReport(CURRICULUM, id => store.sessionsFor(id), stateFor)
+    renderProgressReport(reportEl, report)
+  }
+
+  // Resume: pick the exercise from stored progress.
+  const initialMap = buildMasteryMap(CURRICULUM, id => store.sessionsFor(id))
+  const startId = pickCurrentExerciseId(initialMap)
+
+  refreshReport()
+
+  const startExercise = (id: string): void => {
+    const exercise = findExercise(id)
+    runExercise(exercise, deps, engine => {
+      // 1. Persist this attempt.
+      store.record({ exerciseId: exercise.id, timestamp: Date.now(), summary: engine.summary() })
+      // 2. Recompute progress and refresh the report panel.
+      refreshReport()
+      // 3. Show the summary.
+      if (status) status.textContent = formatSummary(engine.summary())
+      // 4. Arm a one-time advance handler: tap/key → next exercise (or just-mastered replay).
+      const advance = (): void => {
+        window.removeEventListener('pointerdown', advance)
+        window.removeEventListener('keydown', advance)
+        const nextMap = buildMasteryMap(CURRICULUM, sid => store.sessionsFor(sid))
+        startExercise(pickCurrentExerciseId(nextMap))
+      }
+      window.addEventListener('pointerdown', advance, { once: true })
+      window.addEventListener('keydown', advance, { once: true })
+    })
+  }
+
+  startExercise(startId)
+}
+
+function setupReportToggle(): void {
+  if (typeof document === 'undefined') return
+  const toggle = document.getElementById('report-toggle')
+  const panel = document.getElementById('report')
+  if (!toggle || !panel) return
+  toggle.addEventListener('click', () => {
+    panel.classList.toggle('open')
+  })
 }
 
 function ensureStatusEl(): HTMLElement | null {
