@@ -220,6 +220,11 @@ export function bootstrap(): void {
   const synth = new Synth()
   selected.onEvent(e => (e.type === 'on' ? synth.noteOn(e.note) : synth.noteOff(e.note)))
 
+  // Start the input adapter ONCE here so EVERY activity (echo, free play, menu)
+  // receives MIDI — not just the melody/scale flows whose engine used to be the
+  // only caller of start(). Without this, echo's "your turn" got no MIDI events.
+  void selected.start()
+
   // No real input source: show the menu but keep buttons inert and surface the
   // status message on it. Do not crash.
   const noInput = Boolean(selected.statusKey)

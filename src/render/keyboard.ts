@@ -48,6 +48,41 @@ export function whiteKeys(low: number, high: number): WhiteKeyLayout[] {
   return out
 }
 
+export interface KeyRect {
+  x: number
+  width: number
+  isBlack: boolean
+}
+
+/**
+ * On-screen rectangle of a piano key, using the EXACT layout `Keyboard.draw`
+ * paints: white keys laid edge-to-edge, black keys overlaid at 60% width between
+ * their neighbours. Shared with the falling-notes renderer so every note lines up
+ * over the real key it belongs to (not an even chromatic slot). Null if out of range.
+ */
+export function keyRect(
+  midi: number,
+  canvasWidth: number,
+  low = DEFAULT_CONFIG.midiLow,
+  high = DEFAULT_CONFIG.midiHigh,
+): KeyRect | null {
+  if (midi < low || midi > high) return null
+  const whites = whiteKeys(low, high)
+  if (whites.length === 0) return null
+  const whiteWidth = canvasWidth / whites.length
+
+  if (!isBlackKey(midi)) {
+    const w = whites.find(k => k.midi === midi)
+    if (!w) return null
+    return { x: w.index * whiteWidth, width: whiteWidth, isBlack: false }
+  }
+  // A black key sits between the white key below it (midi-1) and the next.
+  const leftWhite = whites.find(k => k.midi === midi - 1)
+  if (!leftWhite) return null
+  const blackWidth = whiteWidth * 0.6
+  return { x: (leftWhite.index + 1) * whiteWidth - blackWidth / 2, width: blackWidth, isBlack: true }
+}
+
 export class Keyboard {
   private readonly ctx: CanvasRenderingContext2D | null
   private readonly cfg: KeyboardConfig

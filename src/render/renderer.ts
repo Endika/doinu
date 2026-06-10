@@ -2,6 +2,7 @@ import type { FrameState } from '../engine/engine'
 import type { Target } from '../engine/chart'
 import { noteFromMidi } from '../core/note'
 import { colorForPitchClass } from './colors'
+import { keyRect } from './keyboard'
 
 export interface GeometryConfig {
   hitLineY: number
@@ -68,12 +69,15 @@ interface BarRect {
   width: number
 }
 
-/** Pure x/width layout for a note bar given the canvas width. */
+/**
+ * Pure x/width layout for a falling-note bar: centred over the REAL piano key it
+ * belongs to (shared `keyRect` layout), so notes line up with the keyboard below.
+ */
 export function barRect(midi: number, canvasWidth: number, low = MIDI_LOW, high = MIDI_HIGH): BarRect {
-  const span = high - low
-  const slot = span > 0 ? canvasWidth / (span + 1) : canvasWidth
-  const width = Math.max(2, slot * 0.8)
-  const x = midiToFraction(midi, low, high) * (canvasWidth - slot) + (slot - width) / 2
+  const k = keyRect(midi, canvasWidth, low, high)
+  if (!k) return { x: 0, width: 0 }
+  const width = Math.max(2, k.width * 0.7)
+  const x = k.x + (k.width - width) / 2
   return { x, width }
 }
 
