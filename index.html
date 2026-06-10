@@ -82,6 +82,53 @@
       #report.open {
         display: block;
       }
+      #menu {
+        position: fixed;
+        inset: 0;
+        z-index: 30;
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        justify-content: center;
+        gap: 1.5rem;
+        background: rgba(10, 10, 15, 0.97);
+      }
+      #menu.hidden {
+        display: none;
+      }
+      #menu .menu-title {
+        margin: 0;
+        font-size: 2.5rem;
+        font-weight: 700;
+        letter-spacing: 0.08em;
+        color: #e8e8ef;
+      }
+      #menu .menu-list {
+        display: flex;
+        flex-direction: column;
+        gap: 0.75rem;
+        width: min(80vw, 22rem);
+      }
+      .menu-btn {
+        padding: 0.85rem 1.25rem;
+        border: 1px solid rgba(232, 232, 239, 0.25);
+        border-radius: 0.6rem;
+        background: rgba(20, 20, 30, 0.85);
+        color: #e8e8ef;
+        font-size: 1.05rem;
+        cursor: pointer;
+        transition: background 0.15s ease;
+      }
+      .menu-btn:hover {
+        background: rgba(40, 40, 60, 0.95);
+      }
+      #menu .menu-status {
+        min-height: 1.2rem;
+        max-width: min(80vw, 22rem);
+        text-align: center;
+        font-size: 0.9rem;
+        color: #b8b8c4;
+      }
     </style>
   </head>
   <body>
@@ -92,6 +139,15 @@
     <div id="status"></div>
     <button id="report-toggle" type="button" aria-label="Toggle progress report">📊</button>
     <div id="report" aria-live="polite"></div>
+    <div id="menu">
+      <h1 class="menu-title">Doinu</h1>
+      <div class="menu-list">
+        <button class="menu-btn" type="button" data-activity="melody">Melody</button>
+        <button class="menu-btn" type="button" data-activity="c-major-up">Scale — C Major (up)</button>
+        <button class="menu-btn" type="button" data-activity="c-major-updown">Scale — C Major (up/down)</button>
+      </div>
+      <div id="menu-status" class="menu-status"></div>
+    </div>
     <script type="module" src="/src/main.ts"></script>
   </body>
 </html>

@@ -7,6 +7,9 @@ import type { Summary } from '../engine/scoring'
 import { Renderer, leadInMs, expectedNotesAt } from '../render/renderer'
 import { Keyboard } from '../render/keyboard'
 import { MelodyMode } from '../modes/melody-mode'
+import { ScaleMode, SCALES } from '../modes/scale-mode'
+import type { Mode } from '../modes/mode'
+import { Synth } from '../audio/synth'
 import { CURRICULUM, type Exercise } from '../content/curriculum'
 import { MetricsStore } from '../progress/metrics-store'
 import { buildMasteryMap, type MasteryEntry, type MasteryState } from '../progress/mastery'
@@ -115,18 +118,22 @@ interface ExerciseDeps {
 }
 
 /**
- * Set up and drive a single exercise to completion. Owns the song-relative
+ * Set up and drive a single `Mode` to completion. Owns the song-relative
  * clock (with lead-in), the `SongTimeAdapter`, the engine, renderer, keyboard
  * and rAF loop. Calls `onComplete(engine)` once when the run ends so the caller
  * can persist the attempt, refresh progress and advance.
+ *
+ * Works for any `Mode` (melody or scale): it builds the chart from the mode and
+ * runs the identical timeline/feedback pipeline. `title` is shown as the status.
  */
-function runExercise(
-  exercise: Exercise,
+function runChart(
+  mode: Mode,
+  title: string,
   deps: ExerciseDeps,
   onComplete: (engine: Engine) => void,
 ): void {
   const { stageCanvas, keysCanvas, status, selected } = deps
-  const chart = new MelodyMode(exercise).buildChart()
+  const chart = mode.buildChart()
 
   sizeCanvas(stageCanvas)
   sizeCanvas(keysCanvas)
@@ -146,7 +153,7 @@ function runExercise(
   const renderer = new Renderer(stageCtx, { hitLineY, pxPerMs: PX_PER_MS })
   const keyboard = new Keyboard(keysCtx)
 
-  if (status) status.textContent = exercise.title
+  if (status) status.textContent = title
 
   engine.start()
 
@@ -171,12 +178,25 @@ function runExercise(
   requestAnimationFrame(loop)
 }
 
+/** Arm a one-time tap/key handler. Used to advance or return to the menu. */
+function onceContinue(handler: () => void): void {
+  const fire = (): void => {
+    window.removeEventListener('pointerdown', fire)
+    window.removeEventListener('keydown', fire)
+    handler()
+  }
+  window.addEventListener('pointerdown', fire, { once: true })
+  window.addEventListener('keydown', fire, { once: true })
+}
+
 /**
  * Real browser entry point. Reads the canvases, selects the input adapter,
- * resumes at the right exercise from stored progress, and drives the engine +
- * renderer to completion — persisting each attempt, tracking mastery, refreshing
- * the parent report and advancing on a tap. Guarded so importing this module in
- * node never touches the DOM.
+ * wires a synth for audio feedback, and shows an activity menu. Each activity
+ * (resumable melody curriculum, or a practice scale) drives the engine +
+ * renderer to completion — persisting each attempt, tracking mastery and
+ * refreshing the parent report. Melody advances to the next exercise on a tap;
+ * scales return to the menu. Guarded so importing this module in node never
+ * touches the DOM.
  */
 export function bootstrap(): void {
   if (typeof document === 'undefined') return
@@ -184,6 +204,8 @@ export function bootstrap(): void {
   const stageCanvas = document.getElementById('stage') as HTMLCanvasElement | null
   const keysCanvas = document.getElementById('keys') as HTMLCanvasElement | null
   const status = ensureStatusEl()
+  const menu = document.getElementById('menu')
+  const menuStatus = document.getElementById('menu-status')
 
   setupReportToggle()
   const reportEl = document.getElementById('report')
@@ -191,10 +213,18 @@ export function bootstrap(): void {
   const env: Env = { hasWebMidi: 'requestMIDIAccess' in navigator }
   const selected = selectAdapter(env)
 
-  // No real input source: show the status message instead of starting.
-  if (selected.statusKey) {
-    if (status) status.textContent = statusMessage(selected.statusKey)
-    return
+  // Audio feedback: a single synth, driven by the RAW selected adapter so every
+  // key press sounds. The engine subscribes separately via its own wrapped
+  // (song-time) adapter inside runChart — the two listeners coexist.
+  const synth = new Synth()
+  selected.onEvent(e => (e.type === 'on' ? synth.noteOn(e.note) : synth.noteOff(e.note)))
+
+  // No real input source: show the menu but keep buttons inert and surface the
+  // status message on it. Do not crash.
+  const noInput = Boolean(selected.statusKey)
+  if (noInput && selected.statusKey) {
+    if (menuStatus) menuStatus.textContent = statusMessage(selected.statusKey)
+    if (status) status.textContent = ''
   }
 
   const store = new MetricsStore(window.localStorage)
@@ -208,34 +238,58 @@ export function bootstrap(): void {
     renderProgressReport(reportEl, report)
   }
 
-  // Resume: pick the exercise from stored progress.
-  const initialMap = buildMasteryMap(CURRICULUM, id => store.sessionsFor(id))
-  const startId = pickCurrentExerciseId(initialMap)
-
   refreshReport()
 
-  const startExercise = (id: string): void => {
+  const showMenu = (): void => {
+    if (status) status.textContent = ''
+    menu?.classList.remove('hidden')
+  }
+  const hideMenu = (): void => {
+    menu?.classList.add('hidden')
+  }
+
+  // Melody flow: resume from stored progress; advance to the next exercise on tap.
+  const startMelody = (id: string): void => {
     const exercise = findExercise(id)
-    runExercise(exercise, deps, engine => {
-      // 1. Persist this attempt.
+    runChart(new MelodyMode(exercise), exercise.title, deps, engine => {
       store.record({ exerciseId: exercise.id, timestamp: Date.now(), summary: engine.summary() })
-      // 2. Recompute progress and refresh the report panel.
       refreshReport()
-      // 3. Show the summary.
       if (status) status.textContent = formatSummary(engine.summary())
-      // 4. Arm a one-time advance handler: tap/key → next exercise (or just-mastered replay).
-      const advance = (): void => {
-        window.removeEventListener('pointerdown', advance)
-        window.removeEventListener('keydown', advance)
+      onceContinue(() => {
         const nextMap = buildMasteryMap(CURRICULUM, sid => store.sessionsFor(sid))
-        startExercise(pickCurrentExerciseId(nextMap))
-      }
-      window.addEventListener('pointerdown', advance, { once: true })
-      window.addEventListener('keydown', advance, { once: true })
+        startMelody(pickCurrentExerciseId(nextMap))
+      })
     })
   }
 
-  startExercise(startId)
+  const resumeMelody = (): void => {
+    const map = buildMasteryMap(CURRICULUM, id => store.sessionsFor(id))
+    startMelody(pickCurrentExerciseId(map))
+  }
+
+  // Scale flow: run the scale once; record a session, then return to the menu on tap.
+  const startScale = (scaleId: string): void => {
+    const spec = SCALES.find(s => s.id === scaleId) ?? SCALES[0]
+    runChart(new ScaleMode(spec), spec.title, deps, engine => {
+      store.record({ exerciseId: spec.id, timestamp: Date.now(), summary: engine.summary() })
+      refreshReport()
+      if (status) status.textContent = formatSummary(engine.summary())
+      onceContinue(showMenu)
+    })
+  }
+
+  // Wire the menu buttons. A click is the user gesture that may start audio.
+  const buttons = document.querySelectorAll<HTMLButtonElement>('.menu-btn')
+  buttons.forEach(btn => {
+    btn.addEventListener('click', () => {
+      if (noInput) return // buttons inert without a real input source
+      synth.resume()
+      hideMenu()
+      const activity = btn.dataset.activity
+      if (activity === 'melody') resumeMelody()
+      else startScale(activity ?? '')
+    })
+  })
 }
 
 function setupReportToggle(): void {
