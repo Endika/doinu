@@ -8,6 +8,7 @@ import { Renderer, leadInMs, expectedNotesAt } from '../render/renderer'
 import { Keyboard } from '../render/keyboard'
 import { MelodyMode } from '../modes/melody-mode'
 import { ScaleMode, SCALES } from '../modes/scale-mode'
+import { SequenceMatcher, ECHO_PHRASES } from '../modes/echo-mode'
 import type { Mode } from '../modes/mode'
 import { Synth } from '../audio/synth'
 import { CURRICULUM, type Exercise } from '../content/curriculum'
@@ -269,6 +270,9 @@ export function bootstrap(): void {
 
   const backBtn = document.getElementById('back-menu')
 
+  // Cycles through ECHO_PHRASES across echo runs (deterministic, no Date.now()).
+  let echoIndex = 0
+
   /**
    * Free-play sandbox: no falling notes, no scoring. Subscribes to the raw
    * selected adapter to track held notes, and draws the keyboard each frame so
@@ -318,6 +322,123 @@ export function bootstrap(): void {
     backBtn?.classList.remove('hidden')
   }
 
+  /**
+   * Echo (call-and-response): play a short phrase (LISTEN), then have the child
+   * repeat it (REPEAT). Modeled on free play — a per-session `running` flag
+   * guards the rAF loop and the (un-removable) adapter listener so stale events
+   * after exit are harmless. Timing does not matter here; we only score the
+   * sequence of notes via `SequenceMatcher`. Audio for the child's presses comes
+   * from the global synth listener; the LISTEN phase uses `synth.playSequence`.
+   */
+  const startEcho = (d: ExerciseDeps, s: Synth): void => {
+    s.resume()
+    const phrase = ECHO_PHRASES[echoIndex % ECHO_PHRASES.length]
+    echoIndex++
+    let running = true
+
+    sizeCanvas(d.stageCanvas)
+    sizeCanvas(d.keysCanvas)
+    const stageCtx = d.stageCanvas?.getContext('2d') ?? null
+    const keysCtx = d.keysCanvas?.getContext('2d') ?? null
+    if (stageCtx && d.stageCanvas) stageCtx.clearRect(0, 0, d.stageCanvas.width, d.stageCanvas.height)
+    const keyboard = new Keyboard(keysCtx)
+
+    // LISTEN phase: the app plays the phrase; the currently-sounding key glows.
+    // We track the sounding note by sequence index off a small rAF loop, then
+    // hand over to the REPEAT phase from playSequence's onDone.
+    let listenIndex = -1 // -1 = not started; index into phrase.notes while playing
+    const activeNotes = new Set<number>()
+
+    let rafId = 0
+    const listenLoop = (): void => {
+      if (!running) return
+      const sounding = listenIndex >= 0 && listenIndex < phrase.notes.length
+      const expected = sounding ? new Set([phrase.notes[listenIndex]]) : new Set<number>()
+      keyboard.draw(new Set(), expected)
+      rafId = requestAnimationFrame(listenLoop)
+    }
+
+    // REPEAT phase: the child echoes; the NEXT expected note glows as a guide.
+    let matcher: SequenceMatcher | null = null
+    const repeatLoop = (): void => {
+      if (!running) return
+      const next = matcher && !matcher.done ? new Set([phrase.notes[matcher.index]]) : new Set<number>()
+      keyboard.draw(activeNotes, next)
+      rafId = requestAnimationFrame(repeatLoop)
+    }
+
+    const finish = (): void => {
+      if (!running) return
+      running = false
+      cancelAnimationFrame(rafId)
+      const m = matcher
+      const accuracy = m ? m.accuracy() : 0
+      store.record({
+        exerciseId: 'echo:' + phrase.id,
+        timestamp: Date.now(),
+        summary: { accuracy, meanTimingDevMs: 0, meanFindMs: 0, tempoBpm: 0 },
+      })
+      refreshReport()
+      if (d.status) d.status.textContent = `Great! ${Math.round(accuracy * 100)}%\n\nTap or press a key to continue.`
+      onceContinue(exit)
+    }
+
+    const startRepeat = (): void => {
+      if (!running) return
+      matcher = new SequenceMatcher(phrase.notes)
+      if (d.status) d.status.textContent = 'Your turn!'
+      d.selected.onEvent(e => {
+        if (!running || !matcher) return
+        if (e.type === 'on') {
+          activeNotes.add(e.note)
+          if (!matcher.done) {
+            matcher.press(e.note)
+            if (matcher.done) finish()
+          }
+        } else {
+          activeNotes.delete(e.note)
+        }
+      })
+      cancelAnimationFrame(rafId)
+      rafId = requestAnimationFrame(repeatLoop)
+    }
+
+    const exit = (): void => {
+      running = false
+      cancelAnimationFrame(rafId)
+      backBtn?.removeEventListener('click', exit)
+      backBtn?.classList.add('hidden')
+      if (d.status) d.status.textContent = ''
+      showMenu()
+    }
+    backBtn?.addEventListener('click', exit)
+    backBtn?.classList.remove('hidden')
+
+    if (d.status) d.status.textContent = 'Listen…'
+    rafId = requestAnimationFrame(listenLoop)
+
+    // Drive the listen highlight in lockstep with playback: advance the index as
+    // each note starts. `playSequence` plays note i for noteDurMs, so we mirror
+    // that schedule with the same per-note duration.
+    let step = 0
+    const advanceListen = (): void => {
+      if (!running) return
+      listenIndex = step
+      step++
+      if (step < phrase.notes.length) {
+        window.setTimeout(advanceListen, phrase.noteDurMs)
+      }
+    }
+    advanceListen()
+    s.playSequence(
+      phrase.notes.map(n => ({ midi: n, durMs: phrase.noteDurMs })),
+      () => {
+        listenIndex = -1
+        startRepeat()
+      },
+    )
+  }
+
   // Scale flow: run the scale once; record a session, then return to the menu on tap.
   const startScale = (scaleId: string): void => {
     const spec = SCALES.find(s => s.id === scaleId) ?? SCALES[0]
@@ -339,6 +460,7 @@ export function bootstrap(): void {
       const activity = btn.dataset.activity
       if (activity === 'melody') resumeMelody()
       else if (activity === 'free') startFreePlay(deps, synth)
+      else if (activity === 'echo') startEcho(deps, synth)
       else startScale(activity ?? '')
     })
   })
