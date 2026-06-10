@@ -10,6 +10,7 @@ import { MelodyMode } from '../modes/melody-mode'
 import { ScaleMode, SCALES } from '../modes/scale-mode'
 import { SequenceMatcher, ECHO_PHRASES } from '../modes/echo-mode'
 import { MemoryGame, MEMORY_NOTES } from '../modes/memory-mode'
+import { NoteFindGame, NOTE_FIND_NOTES } from '../modes/note-find-mode'
 import type { Mode } from '../modes/mode'
 import { Synth } from '../audio/synth'
 import { CURRICULUM, type Exercise } from '../content/curriculum'
@@ -602,6 +603,109 @@ export function bootstrap(): void {
     playRound()
   }
 
+  /**
+   * Find-the-note: the app lights ONE white key and the child finds and presses
+   * it. We measure how long each find takes (find-time, ms) and the accuracy
+   * across a set of `total` targets. After the set, record a session and chain a
+   * FRESH set automatically so play continues. Modeled on `startMemory`: a
+   * per-session `running` flag guards the rAF loop and the (un-removable) adapter
+   * listener; the rAF loop draws `keyboard.draw(activeNotes, new Set([target]))`
+   * so the target key GLOWS as a "press me" guide. `#back-menu` is the only way out.
+   *
+   * Sessions are recorded with `exerciseId:'note-find'` and the standard `Summary`
+   * shape — `accuracy` from the game, `meanFindMs` from the measured find-times.
+   */
+  const startNoteFind = (d: ExerciseDeps, s: Synth): void => {
+    s.resume()
+    let game = new NoteFindGame(
+      () => NOTE_FIND_NOTES[Math.floor(Math.random() * NOTE_FIND_NOTES.length)],
+      8,
+    )
+    let running = true
+    let findSum = 0 // sum of measured find-times (ms) across this set
+    let shownAt = performance.now() // when the current target first appeared
+    const activeNotes = new Set<number>()
+
+    sizeCanvas(d.stageCanvas)
+    sizeCanvas(d.keysCanvas)
+    const stageCtx = d.stageCanvas?.getContext('2d') ?? null
+    const keysCtx = d.keysCanvas?.getContext('2d') ?? null
+    if (stageCtx && d.stageCanvas) stageCtx.clearRect(0, 0, d.stageCanvas.width, d.stageCanvas.height)
+    const keyboard = new Keyboard(keysCtx)
+
+    if (d.status) d.status.textContent = 'Find this key! 🔎'
+
+    // ONE persistent input listener (guarded by `running`): track held notes for
+    // the glow and, on note-ON, test the press against the current target.
+    d.selected.onEvent(e => {
+      if (!running) return
+      if (e.type === 'on') {
+        activeNotes.add(e.note)
+        const r = game.press(e.note)
+        if (r === 'correct') {
+          findSum += performance.now() - shownAt
+          if (game.done) {
+            finishSet()
+          } else {
+            shownAt = performance.now()
+            if (d.status) d.status.textContent = 'Yes! ✅'
+          }
+        }
+        // 'wrong' keeps the status as the find prompt — no harsh penalty UI.
+      } else {
+        activeNotes.delete(e.note)
+      }
+    })
+
+    // ONE rAF loop: the target key glows as a "press me" guide; held notes show.
+    let rafId = 0
+    const loop = (): void => {
+      if (!running) return
+      keyboard.draw(activeNotes, game.done ? new Set<number>() : new Set([game.target]))
+      rafId = requestAnimationFrame(loop)
+    }
+
+    // Set complete: score it, record a session, then chain a FRESH set.
+    function finishSet(): void {
+      if (!running) return
+      const accuracy = game.accuracy()
+      const meanFindMs = game.hits > 0 ? findSum / game.hits : 0
+      store.record({
+        exerciseId: 'note-find',
+        timestamp: Date.now(),
+        summary: { accuracy, meanTimingDevMs: 0, meanFindMs, tempoBpm: 0 },
+      })
+      refreshReport()
+      if (d.status) {
+        d.status.textContent = `Great! ${Math.round(accuracy * 100)}% · ${Math.round(meanFindMs)}ms 🌟`
+      }
+      window.setTimeout(() => {
+        if (!running) return
+        game = new NoteFindGame(
+          () => NOTE_FIND_NOTES[Math.floor(Math.random() * NOTE_FIND_NOTES.length)],
+          8,
+        )
+        findSum = 0
+        shownAt = performance.now()
+        activeNotes.clear()
+        if (d.status) d.status.textContent = 'Find this key! 🔎'
+      }, 1500)
+    }
+
+    const exit = (): void => {
+      running = false
+      cancelAnimationFrame(rafId)
+      backBtn?.removeEventListener('click', exit)
+      backBtn?.classList.add('hidden')
+      if (d.status) d.status.textContent = ''
+      showMenu()
+    }
+    backBtn?.addEventListener('click', exit)
+    backBtn?.classList.remove('hidden')
+
+    rafId = requestAnimationFrame(loop)
+  }
+
   // Scale flow: run the scale once; record a session, then return to the menu on tap.
   const startScale = (scaleId: string): void => {
     const spec = SCALES.find(s => s.id === scaleId) ?? SCALES[0]
@@ -625,6 +729,7 @@ export function bootstrap(): void {
       else if (activity === 'free') startFreePlay(deps, synth)
       else if (activity === 'echo') startEcho(deps, synth)
       else if (activity === 'memory') startMemory(deps, synth)
+      else if (activity === 'notefind') startNoteFind(deps, synth)
       else startScale(activity ?? '')
     })
   })
