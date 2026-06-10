@@ -158,6 +158,28 @@
       #menu.hidden {
         display: none;
       }
+      /* Language toggle: a small chunky pill fixed top-right of the start screen. */
+      #lang-toggle {
+        position: fixed;
+        top: 0.9rem;
+        right: 0.9rem;
+        z-index: 31;
+        min-width: 3rem;
+        padding: 0.6rem 1rem;
+        border: none;
+        border-radius: 999px;
+        background: #fff;
+        color: var(--ink);
+        font-family: var(--font);
+        font-size: 1rem;
+        font-weight: 800;
+        cursor: pointer;
+        box-shadow: 0 6px 16px rgba(60, 30, 120, 0.35);
+        transition: transform 0.12s ease;
+      }
+      #lang-toggle:active {
+        transform: scale(0.92);
+      }
       #menu .menu-card {
         display: flex;
         flex-direction: column;
@@ -252,7 +274,7 @@
         border-bottom: 1px solid rgba(120, 90, 200, 0.16);
       }
       .progress-content:empty::before {
-        content: 'Play a little and your progress shows up here ✨';
+        content: var(--progress-empty, 'Play a little and your progress shows up here ✨');
         color: #8a5be0;
         font-weight: 600;
       }
@@ -358,23 +380,24 @@
     </div>
     <div id="status"></div>
     <div id="menu">
+      <button id="lang-toggle" type="button" data-i18n="lang.toggle">ES</button>
       <div class="menu-card">
         <h1 class="menu-title">🎹 Doinu</h1>
-        <p class="menu-sub">¡A jugar! 🎶</p>
+        <p class="menu-sub" data-i18n="menu.sub">¡A jugar! 🎶</p>
         <div class="menu-list">
-          <button class="menu-btn" type="button" data-activity="melody">🎵 Melody</button>
-          <button class="menu-btn" type="button" data-activity="songs">🎶 Songs</button>
-          <button class="menu-btn" type="button" data-activity="import">📂 Load MIDI</button>
-          <button class="menu-btn" type="button" data-activity="practice">🐢 Practice (wait)</button>
-          <button class="menu-btn" type="button" data-activity="progress">📊 Progress</button>
-          <button class="menu-btn" type="button" data-activity="echo">🔁 Echo</button>
-          <button class="menu-btn" type="button" data-activity="memory">🧠 Memory</button>
-          <button class="menu-btn" type="button" data-activity="notefind">🔎 Find the note</button>
-          <button class="menu-btn" type="button" data-activity="ear">👂 Listen &amp; play</button>
-          <button class="menu-btn" type="button" data-activity="rhythm">🥁 Tap the beat</button>
-          <button class="menu-btn" type="button" data-activity="c-major-up">🪜 Scale up</button>
-          <button class="menu-btn" type="button" data-activity="c-major-updown">🎢 Scale up &amp; down</button>
-          <button class="menu-btn" type="button" data-activity="free">✨ Free play</button>
+          <button class="menu-btn" type="button" data-activity="melody" data-i18n="act.melody">🎵 Melody</button>
+          <button class="menu-btn" type="button" data-activity="songs" data-i18n="act.songs">🎶 Songs</button>
+          <button class="menu-btn" type="button" data-activity="import" data-i18n="act.import">📂 Load MIDI</button>
+          <button class="menu-btn" type="button" data-activity="practice" data-i18n="act.practice">🐢 Practice (wait)</button>
+          <button class="menu-btn" type="button" data-activity="progress" data-i18n="act.progress">📊 Progress</button>
+          <button class="menu-btn" type="button" data-activity="echo" data-i18n="act.echo">🔁 Echo</button>
+          <button class="menu-btn" type="button" data-activity="memory" data-i18n="act.memory">🧠 Memory</button>
+          <button class="menu-btn" type="button" data-activity="notefind" data-i18n="act.notefind">🔎 Find the note</button>
+          <button class="menu-btn" type="button" data-activity="ear" data-i18n="act.ear">👂 Listen &amp; play</button>
+          <button class="menu-btn" type="button" data-activity="rhythm" data-i18n="act.rhythm">🥁 Tap the beat</button>
+          <button class="menu-btn" type="button" data-activity="c-major-up" data-i18n="act.scaleup">🪜 Scale up</button>
+          <button class="menu-btn" type="button" data-activity="c-major-updown" data-i18n="act.scaleupdown">🎢 Scale up &amp; down</button>
+          <button class="menu-btn" type="button" data-activity="free" data-i18n="act.free">✨ Free play</button>
         </div>
       </div>
       <div id="menu-status" class="menu-status"></div>
@@ -382,21 +405,21 @@
     </div>
     <div id="songs" class="hidden">
       <div class="menu-card">
-        <h1 class="menu-title">🎶 Songs</h1>
-        <p class="menu-sub">Pick a song 🎹</p>
+        <h1 class="menu-title" data-i18n="songs.title">🎶 Songs</h1>
+        <p class="menu-sub" data-i18n="songs.pick">Pick a song 🎹</p>
         <div id="song-list" class="menu-list"></div>
-        <button id="songs-back" class="menu-btn" type="button">← Menu</button>
+        <button id="songs-back" class="menu-btn" type="button" data-i18n="nav.back">← Menu</button>
       </div>
     </div>
     <div id="progress" class="hidden">
       <div class="menu-card">
-        <h1 class="menu-title">📊 Progress</h1>
-        <p class="menu-sub">How you're doing 🌟</p>
+        <h1 class="menu-title" data-i18n="progress.title">📊 Progress</h1>
+        <p class="menu-sub" data-i18n="progress.sub">How you're doing 🌟</p>
         <div id="progress-content" class="progress-content"></div>
-        <button id="progress-back" class="menu-btn" type="button">← Menu</button>
+        <button id="progress-back" class="menu-btn" type="button" data-i18n="nav.back">← Menu</button>
       </div>
     </div>
-    <button id="back-menu" class="hidden" type="button">← Menu</button>
+    <button id="back-menu" class="hidden" type="button" data-i18n="nav.back">← Menu</button>
     <input
       id="midi-file"
       type="file"

@@ -27,6 +27,15 @@ import {
 import { MetricsStore } from '../progress/metrics-store'
 import { buildMasteryMap, type MasteryEntry, type MasteryState } from '../progress/mastery'
 import { buildProgressReport, renderProgressReport } from '../progress/progress-view'
+import { resolveLocale, createI18n, type Locale, type MessageKey } from '../i18n'
+
+/**
+ * Module-level translator. Defaults to an English-only lookup so node tests
+ * (which import pure exports but never call `bootstrap`) translate without a
+ * DOM. `bootstrap` reassigns it to the live i18n instance once the locale is
+ * resolved from `navigator.language` + the stored override.
+ */
+let t: (key: MessageKey) => string = key => createI18n('en').t(key)
 
 /** Build-time app version, injected by Vite from package.json. */
 declare const __APP_VERSION__: string
@@ -117,13 +126,14 @@ export function pickCurrentExerciseId(map: MasteryEntry[]): string {
   return map[map.length - 1].exerciseId
 }
 
-const STATUS_MESSAGES: Record<string, string> = {
-  'input.noMidiMicLater':
-    'No MIDI keyboard detected. Microphone input is coming in Fase 2.',
+// Maps an adapter status key onto a translatable message key.
+const STATUS_MESSAGE_KEYS: Record<string, MessageKey> = {
+  'input.noMidiMicLater': 'st.noMidi',
 }
 
 function statusMessage(key: string): string {
-  return STATUS_MESSAGES[key] ?? key
+  const messageKey = STATUS_MESSAGE_KEYS[key]
+  return messageKey ? t(messageKey) : key
 }
 
 function findExercise(id: string): Exercise {
@@ -132,11 +142,11 @@ function findExercise(id: string): Exercise {
 
 /** Encouraging-but-honest praise scaled to the score (no "Great!" for a 0%). */
 function praise(pct: number): string {
-  if (pct >= 90) return `Amazing! ${pct}% 🌟`
-  if (pct >= 70) return `Great! ${pct}% 👏`
-  if (pct >= 40) return `Good try! ${pct}% 💪`
-  if (pct > 0) return `Keep going! ${pct}% 🎵`
-  return `Let's try again! 🙈`
+  if (pct >= 90) return `${t('praise.amazing')} ${pct}% 🌟`
+  if (pct >= 70) return `${t('praise.great')} ${pct}% 👏`
+  if (pct >= 40) return `${t('praise.good')} ${pct}% 💪`
+  if (pct > 0) return `${t('praise.keep')} ${pct}% 🎵`
+  return t('praise.again')
 }
 
 function formatSummary(s: Summary): string {
@@ -327,6 +337,35 @@ export function bootstrap(): void {
   const versionEl = document.getElementById('version')
   if (versionEl) versionEl.textContent = `v${__APP_VERSION__}`
 
+  // i18n: resolve EN/ES from navigator + the stored override, then point the
+  // module-level `t` at the live instance so praise()/status helpers translate.
+  const LANG_STORAGE_KEY = 'doinu.lang'
+  const i18n = createI18n(
+    resolveLocale(navigator.language, window.localStorage.getItem(LANG_STORAGE_KEY)),
+  )
+  t = i18n.t
+  const langToggle = document.getElementById('lang-toggle')
+  const progressContent = document.getElementById('progress-content')
+
+  // Paint every [data-i18n] element, the toggle label, and the CSS-driven
+  // empty-progress message for the current locale.
+  const applyI18n = (): void => {
+    document.querySelectorAll<HTMLElement>('[data-i18n]').forEach(el => {
+      const key = el.dataset.i18n as MessageKey | undefined
+      if (key) el.textContent = i18n.t(key)
+    })
+    progressContent?.style.setProperty('--progress-empty', `'${i18n.t('progress.empty')}'`)
+  }
+
+  langToggle?.addEventListener('click', () => {
+    const next: Locale = i18n.locale === 'en' ? 'es' : 'en'
+    i18n.set(next)
+    window.localStorage.setItem(LANG_STORAGE_KEY, next)
+    applyI18n()
+  })
+
+  applyI18n()
+
   // Give the status banner a celebratory "pop" every time its text changes.
   if (status) {
     const banner = status
@@ -457,7 +496,7 @@ export function bootstrap(): void {
     if (stageCtx && d.stageCanvas) stageCtx.clearRect(0, 0, d.stageCanvas.width, d.stageCanvas.height)
     const keyboard = new Keyboard(keysCtx)
 
-    if (d.status) d.status.textContent = 'Free play — press any key'
+    if (d.status) d.status.textContent = t('st.freePlay')
 
     let rafId = 0
     const loop = (): void => {
@@ -542,7 +581,7 @@ export function bootstrap(): void {
       if (!running) return
       phase = 'repeat'
       matcher = new SequenceMatcher(phrase.notes)
-      if (d.status) d.status.textContent = 'Your turn! 🎶'
+      if (d.status) d.status.textContent = t('st.yourTurn')
     }
 
     // LISTEN: play the phrase, highlighting each note as it sounds, then REPEAT.
@@ -552,7 +591,7 @@ export function bootstrap(): void {
       matcher = null
       listenIndex = -1
       activeNotes.clear()
-      if (d.status) d.status.textContent = 'Listen… 👂'
+      if (d.status) d.status.textContent = t('st.listen')
       let step = 0
       const advanceListen = (): void => {
         if (!running || phase !== 'listen') return
@@ -683,7 +722,7 @@ export function bootstrap(): void {
       listenIndex = -1
       ptr = 0
       activeNotes.clear()
-      if (d.status) d.status.textContent = 'Watch… 👀'
+      if (d.status) d.status.textContent = t('st.watch')
       const seq = game.sequence
       let step = 0
       const advanceListen = (): void => {
@@ -699,7 +738,7 @@ export function bootstrap(): void {
           if (!running) return
           listenIndex = -1
           phase = 'repeat'
-          if (d.status) d.status.textContent = 'Your turn! 🎶'
+          if (d.status) d.status.textContent = t('st.yourTurn')
         },
       )
     }
@@ -708,7 +747,7 @@ export function bootstrap(): void {
     function winRound(): void {
       if (!running) return
       phase = 'done'
-      if (d.status) d.status.textContent = `Level ${game.sequence.length}! 🌟`
+      if (d.status) d.status.textContent = `${t('st.level')} ${game.sequence.length}! 🌟`
       store.record({
         exerciseId: 'memory',
         timestamp: Date.now(),
@@ -724,7 +763,7 @@ export function bootstrap(): void {
     function loseRound(): void {
       if (!running) return
       phase = 'done'
-      if (d.status) d.status.textContent = `Oops! Best: ${game.longest} 🙈`
+      if (d.status) d.status.textContent = `${t('st.best')}: ${game.longest} 🙈`
       store.record({
         exerciseId: 'memory',
         timestamp: Date.now(),
@@ -783,7 +822,7 @@ export function bootstrap(): void {
     if (stageCtx && d.stageCanvas) stageCtx.clearRect(0, 0, d.stageCanvas.width, d.stageCanvas.height)
     const keyboard = new Keyboard(keysCtx)
 
-    if (d.status) d.status.textContent = 'Find this key! 🔎'
+    if (d.status) d.status.textContent = t('st.find')
 
     // ONE persistent input listener (guarded by `running`): track held notes for
     // the glow and, on note-ON, test the press against the current target.
@@ -798,7 +837,7 @@ export function bootstrap(): void {
             finishSet()
           } else {
             shownAt = performance.now()
-            if (d.status) d.status.textContent = 'Yes! ✅'
+            if (d.status) d.status.textContent = t('st.yes')
           }
         }
         // 'wrong' keeps the status as the find prompt — no harsh penalty UI.
@@ -839,7 +878,7 @@ export function bootstrap(): void {
         findSum = 0
         shownAt = performance.now()
         activeNotes.clear()
-        if (d.status) d.status.textContent = 'Find this key! 🔎'
+        if (d.status) d.status.textContent = t('st.find')
       }, 1500)
     }
 
@@ -876,7 +915,7 @@ export function bootstrap(): void {
 
     const playTarget = (): void => s.playSequence([{ midi: game.target, durMs: 800 }])
 
-    if (d.status) d.status.textContent = 'Listen… 👂'
+    if (d.status) d.status.textContent = t('st.listen')
     playTarget()
 
     d.selected.onEvent(e => {
@@ -888,15 +927,15 @@ export function bootstrap(): void {
           if (game.done) {
             finishSet()
           } else if (d.status) {
-            d.status.textContent = 'Yes! ✅'
+            d.status.textContent = t('st.yes')
             window.setTimeout(() => {
               if (!running) return
-              if (d.status) d.status.textContent = 'Listen… 👂'
+              if (d.status) d.status.textContent = t('st.listen')
               playTarget()
             }, 500)
           }
         } else {
-          if (d.status) d.status.textContent = 'Try again 👂'
+          if (d.status) d.status.textContent = t('st.tryAgainEar')
           playTarget() // replay as a hint
         }
       } else {
@@ -926,7 +965,7 @@ export function bootstrap(): void {
         if (!running) return
         game = new NoteFindGame(pick, 6)
         activeNotes.clear()
-        if (d.status) d.status.textContent = 'Listen… 👂'
+        if (d.status) d.status.textContent = t('st.listen')
         playTarget()
       }, 1600)
     }
@@ -994,16 +1033,16 @@ export function bootstrap(): void {
       activeNotes.clear()
       const start = performance.now() + 1600 // "get ready" lead-in
       beats = beatTimes(start, BEATS, BPM)
-      if (d.status) d.status.textContent = 'Get ready… 🥁'
-      beats.forEach((t, i) => {
+      if (d.status) d.status.textContent = t('st.getReady')
+      beats.forEach((beatTime, i) => {
         timeouts.push(
           window.setTimeout(
             () => {
               if (!running) return
               s.playSequence([{ midi: CLICK_MIDI, durMs: 100 }])
-              if (d.status) d.status.textContent = `Tap! ${i + 1} / ${BEATS} 🥁`
+              if (d.status) d.status.textContent = `${t('st.tap')} ${i + 1} / ${BEATS} 🥁`
             },
-            Math.max(0, t - performance.now()),
+            Math.max(0, beatTime - performance.now()),
           ),
         )
       })
@@ -1197,11 +1236,11 @@ export function bootstrap(): void {
         handsRow.appendChild(b)
       }
       if (songHands(song).length === 1) {
-        addHand('▶ Play', 'R')
+        addHand(t('hand.play'), 'R')
       } else {
-        addHand('👉 Right', 'R')
-        addHand('👈 Left', 'L')
-        addHand('🙌 Both', 'both')
+        addHand(t('hand.right'), 'R')
+        addHand(t('hand.left'), 'L')
+        addHand(t('hand.both'), 'both')
       }
       card.appendChild(handsRow)
       songList.appendChild(card)
@@ -1264,14 +1303,14 @@ export function bootstrap(): void {
           playImported(imported)
         } catch (err) {
           if (err instanceof MidiImportError) {
-            if (menuStatus) menuStatus.textContent = 'Could not read that MIDI file 🙈'
+            if (menuStatus) menuStatus.textContent = t('st.midiError')
             return
           }
           throw err
         }
       })
       .catch(() => {
-        if (menuStatus) menuStatus.textContent = 'Could not read that MIDI file 🙈'
+        if (menuStatus) menuStatus.textContent = t('st.midiError')
       })
   })
 
