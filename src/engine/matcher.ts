@@ -53,4 +53,9 @@ export class Matcher {
   missed(): Target[] {
     return this.targets.filter(t => this.status.get(t.id) === 'missed')
   }
+
+  /** Targets not yet hit and not yet missed — what practice/wait mode waits on. */
+  pending(): Target[] {
+    return this.targets.filter(t => this.status.get(t.id) === 'pending')
+  }
 }

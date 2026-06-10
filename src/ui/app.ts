@@ -1,7 +1,7 @@
 import type { InputAdapter, Capabilities } from '../core/input-adapter'
 import type { InputEvent } from '../core/events'
 import { MidiInputAdapter } from '../core/midi-adapter'
-import { perfClock, offsetClock } from '../core/clock'
+import { perfClock, offsetClock, PausableClock, type Clock } from '../core/clock'
 import { Engine } from '../engine/engine'
 import type { Summary } from '../engine/scoring'
 import { Renderer, leadInMs, expectedNotesAt } from '../render/renderer'
@@ -38,6 +38,24 @@ class SongTimeAdapter implements InputAdapter {
   }
   onEvent(cb: (e: InputEvent) => void): void {
     this.inner.onEvent(e => cb({ ...e, time: e.time - this.origin }))
+  }
+  start(): Promise<void> { return this.inner.start() }
+  stop(): void { this.inner.stop() }
+}
+
+/**
+ * Wraps an adapter so each emitted event is stamped with the CURRENT song-clock
+ * time (read synchronously on arrival). Used by practice/wait mode, where the
+ * song clock pauses — a fixed perf→song offset would be wrong across pauses, but
+ * `clock.now()` at press time is always correct.
+ */
+class ClockStampAdapter implements InputAdapter {
+  capabilities: Capabilities
+  constructor(private readonly inner: InputAdapter, private readonly clock: Clock) {
+    this.capabilities = inner.capabilities
+  }
+  onEvent(cb: (e: InputEvent) => void): void {
+    this.inner.onEvent(e => cb({ ...e, time: this.clock.now() }))
   }
   start(): Promise<void> { return this.inner.start() }
   stop(): void { this.inner.stop() }
@@ -771,6 +789,113 @@ export function bootstrap(): void {
     })
   }
 
+  // Practice (wait) mode: the score FREEZES at the hit line until the learner
+  // plays the correct note, then advances — learn a melody at your own pace, no
+  // time pressure. Runs the melody curriculum; ← Menu exits; auto-advances on
+  // completion. Recorded under a separate 'practice:' id so it does not affect the
+  // timed-melody mastery gating.
+  const startPractice = (startId: string): void => {
+    let alive = true
+    let stopRun: (() => void) | null = null
+    let timer = 0
+    const exit = (): void => {
+      if (!alive) return
+      alive = false
+      stopRun?.()
+      window.clearTimeout(timer)
+      backBtn?.removeEventListener('click', exit)
+      backBtn?.classList.add('hidden')
+      if (status) status.textContent = ''
+      showMenu()
+    }
+    backBtn?.addEventListener('click', exit)
+    backBtn?.classList.remove('hidden')
+
+    const playOne = (id: string): void => {
+      if (!alive) return
+      const exercise = findExercise(id)
+      const chart = new MelodyMode(exercise).buildChart()
+
+      sizeCanvas(stageCanvas)
+      sizeCanvas(keysCanvas)
+      const stageCtx = stageCanvas?.getContext('2d') ?? null
+      const keysCtx = keysCanvas?.getContext('2d') ?? null
+
+      const hitLineY = stageCanvas ? stageCanvas.height * 0.88 : 0
+      const lead = leadInMs(hitLineY, PX_PER_MS)
+      const clock = new PausableClock(perfClock)
+      clock.setTo(-lead)
+      clock.resume()
+
+      const adapter = new ClockStampAdapter(selected, clock)
+      const engine = new Engine(chart, adapter, clock, { windowMs: WINDOW_MS })
+      const renderer = new Renderer(stageCtx, { hitLineY, pxPerMs: PX_PER_MS })
+      const keyboard = new Keyboard(keysCtx)
+
+      if (status) status.textContent = `${exercise.title} 🐢`
+      engine.start()
+
+      const lastEndMs = chart.targets.length
+        ? Math.max(...chart.targets.map(t => t.startMs + t.durMs))
+        : 0
+
+      let rafId = 0
+      const loop = (): void => {
+        if (!alive) return
+        engine.tick()
+
+        // The wait: pause at the earliest unplayed note's time until it is played.
+        const pending = engine.pendingTargets()
+        if (pending.length > 0) {
+          const nextStart = Math.min(...pending.map(t => t.startMs))
+          if (clock.now() >= nextStart) {
+            clock.setTo(nextStart) // clamp the score exactly at the hit line
+            clock.pause()
+          } else {
+            clock.resume()
+          }
+        } else {
+          clock.resume()
+        }
+
+        const frame = engine.frameState()
+        renderer.draw(frame)
+        const expected = expectedNotesAt(frame.targets, frame.nowMs, WINDOW_MS)
+        keyboard.draw(frame.activeNotes, expected)
+
+        if (clock.now() >= lastEndMs + 800) {
+          engine.stop()
+          store.record({
+            exerciseId: `practice:${exercise.id}`,
+            timestamp: Date.now(),
+            summary: engine.summary(),
+          })
+          refreshReport()
+          if (status) status.textContent = formatSummary(engine.summary())
+          timer = window.setTimeout(() => {
+            if (!alive) return
+            const nextMap = buildMasteryMap(CURRICULUM, sid => store.sessionsFor(sid))
+            playOne(pickCurrentExerciseId(nextMap))
+          }, 2500)
+          return
+        }
+        rafId = requestAnimationFrame(loop)
+      }
+      stopRun = (): void => {
+        engine.stop()
+        cancelAnimationFrame(rafId)
+      }
+      rafId = requestAnimationFrame(loop)
+    }
+
+    playOne(startId)
+  }
+
+  const resumePractice = (): void => {
+    const map = buildMasteryMap(CURRICULUM, id => store.sessionsFor(id))
+    startPractice(pickCurrentExerciseId(map))
+  }
+
   // Wire the menu buttons. A click is the user gesture that may start audio.
   const buttons = document.querySelectorAll<HTMLButtonElement>('.menu-btn')
   buttons.forEach(btn => {
@@ -780,6 +905,7 @@ export function bootstrap(): void {
       hideMenu()
       const activity = btn.dataset.activity
       if (activity === 'melody') resumeMelody()
+      else if (activity === 'practice') resumePractice()
       else if (activity === 'free') startFreePlay(deps, synth)
       else if (activity === 'echo') startEcho(deps, synth)
       else if (activity === 'memory') startMemory(deps, synth)

@@ -72,6 +72,11 @@ export class Engine {
     return this.scorer.summary(this.chart.bpm)
   }
 
+  /** Targets not yet hit/missed — practice (wait) mode pauses on the earliest. */
+  pendingTargets(): Target[] {
+    return this.matcher.pending()
+  }
+
   frameState(): FrameState {
     return {
       nowMs: this.clock.now(),
