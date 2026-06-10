@@ -19,10 +19,21 @@
         width: 100vw;
         height: 100vh;
       }
+      #status {
+        position: fixed;
+        top: 1rem;
+        left: 50%;
+        transform: translateX(-50%);
+        text-align: center;
+        white-space: pre-line;
+        font-size: 1rem;
+        pointer-events: none;
+      }
     </style>
   </head>
   <body>
     <canvas id="stage"></canvas>
+    <div id="status"></div>
     <script type="module" src="/src/main.ts"></script>
   </body>
 </html>
