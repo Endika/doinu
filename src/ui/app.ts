@@ -856,6 +856,94 @@ export function bootstrap(): void {
     rafId = requestAnimationFrame(loop)
   }
 
+  // Ear training ("Listen & play"): the app plays a note (no key glows — that is
+  // the challenge); the child finds it by ear. Reuses NoteFindGame for the logic;
+  // a wrong press replays the note as a hint. ← Menu exits.
+  const startEar = (d: ExerciseDeps, s: Synth): void => {
+    s.resume()
+    const pick = (): number => NOTE_FIND_NOTES[Math.floor(Math.random() * NOTE_FIND_NOTES.length)]
+    let game = new NoteFindGame(pick, 6)
+    let running = true
+    const activeNotes = new Set<number>()
+
+    sizeCanvas(d.stageCanvas)
+    sizeCanvas(d.keysCanvas)
+    const stageCtx = d.stageCanvas?.getContext('2d') ?? null
+    const keysCtx = d.keysCanvas?.getContext('2d') ?? null
+    if (stageCtx && d.stageCanvas) stageCtx.clearRect(0, 0, d.stageCanvas.width, d.stageCanvas.height)
+    const keyboard = new Keyboard(keysCtx)
+
+    const playTarget = (): void => s.playSequence([{ midi: game.target, durMs: 800 }])
+
+    if (d.status) d.status.textContent = 'Listen… 👂'
+    playTarget()
+
+    d.selected.onEvent(e => {
+      if (!running) return
+      if (e.type === 'on') {
+        activeNotes.add(e.note)
+        const r = game.press(e.note)
+        if (r === 'correct') {
+          if (game.done) {
+            finishSet()
+          } else if (d.status) {
+            d.status.textContent = 'Yes! ✅'
+            window.setTimeout(() => {
+              if (!running) return
+              if (d.status) d.status.textContent = 'Listen… 👂'
+              playTarget()
+            }, 500)
+          }
+        } else {
+          if (d.status) d.status.textContent = 'Try again 👂'
+          playTarget() // replay as a hint
+        }
+      } else {
+        activeNotes.delete(e.note)
+      }
+    })
+
+    // No guide glow — the child must use their ear, not their eyes.
+    let rafId = 0
+    const loop = (): void => {
+      if (!running) return
+      keyboard.draw(activeNotes)
+      rafId = requestAnimationFrame(loop)
+    }
+
+    function finishSet(): void {
+      if (!running) return
+      const accuracy = game.accuracy()
+      store.record({
+        exerciseId: 'ear',
+        timestamp: Date.now(),
+        summary: { accuracy, meanTimingDevMs: 0, meanFindMs: 0, tempoBpm: 0 },
+      })
+      refreshReport()
+      if (d.status) d.status.textContent = praise(Math.round(accuracy * 100))
+      window.setTimeout(() => {
+        if (!running) return
+        game = new NoteFindGame(pick, 6)
+        activeNotes.clear()
+        if (d.status) d.status.textContent = 'Listen… 👂'
+        playTarget()
+      }, 1600)
+    }
+
+    const exit = (): void => {
+      running = false
+      cancelAnimationFrame(rafId)
+      backBtn?.removeEventListener('click', exit)
+      backBtn?.classList.add('hidden')
+      if (d.status) d.status.textContent = ''
+      showMenu()
+    }
+    backBtn?.addEventListener('click', exit)
+    backBtn?.classList.remove('hidden')
+
+    rafId = requestAnimationFrame(loop)
+  }
+
   // Scale flow: run the scale once; record a session, then auto-return to the menu.
   // The ← Menu button exits at any time during play or the result banner.
   const startScale = (scaleId: string): void => {
@@ -1114,6 +1202,7 @@ export function bootstrap(): void {
       else if (activity === 'echo') startEcho(deps, synth)
       else if (activity === 'memory') startMemory(deps, synth)
       else if (activity === 'notefind') startNoteFind(deps, synth)
+      else if (activity === 'ear') startEar(deps, synth)
       else startScale(activity ?? '')
     })
   })
