@@ -103,16 +103,9 @@ function findExercise(id: string): Exercise {
 }
 
 function formatSummary(s: Summary): string {
-  const accuracy = `${Math.round(s.accuracy * 100)}%`
-  const findSpeed = `${Math.round(s.meanFindMs)} ms`
-  const timing = `${Math.round(s.meanTimingDevMs)} ms`
-  return [
-    `Accuracy: ${accuracy}`,
-    `Find speed: ${findSpeed}`,
-    `Timing: ±${timing}`,
-    '',
-    'Tap or press a key to continue.',
-  ].join('\n')
+  const pct = Math.round(s.accuracy * 100)
+  const emoji = pct >= 90 ? '🌟' : pct >= 60 ? '👏' : '💪'
+  return `Great! ${pct}% ${emoji}`
 }
 
 // DOM + collaborators shared by every exercise run within one bootstrap.
@@ -137,7 +130,7 @@ function runChart(
   title: string,
   deps: ExerciseDeps,
   onComplete: (engine: Engine) => void,
-): void {
+): () => void {
   const { stageCanvas, keysCanvas, status, selected } = deps
   const chart = mode.buildChart()
 
@@ -167,7 +160,10 @@ function runChart(
     ? Math.max(...chart.targets.map(t => t.startMs + t.durMs))
     : 0
 
+  let running = true
+  let rafId = 0
   const loop = (): void => {
+    if (!running) return
     engine.tick()
     const frame = engine.frameState()
     renderer.draw(frame)
@@ -175,24 +171,21 @@ function runChart(
     keyboard.draw(frame.activeNotes, expected)
 
     if (songClock.now() >= lastEndMs + 1500) {
+      running = false
       engine.stop()
       onComplete(engine)
       return
     }
-    requestAnimationFrame(loop)
+    rafId = requestAnimationFrame(loop)
   }
-  requestAnimationFrame(loop)
-}
+  rafId = requestAnimationFrame(loop)
 
-/** Arm a one-time tap/key handler. Used to advance or return to the menu. */
-function onceContinue(handler: () => void): void {
-  const fire = (): void => {
-    window.removeEventListener('pointerdown', fire)
-    window.removeEventListener('keydown', fire)
-    handler()
+  // Returns a stop() so the caller's ← Menu can abort mid-run.
+  return (): void => {
+    running = false
+    cancelAnimationFrame(rafId)
+    engine.stop()
   }
-  window.addEventListener('pointerdown', fire, { once: true })
-  window.addEventListener('keydown', fire, { once: true })
 }
 
 /**
@@ -275,26 +268,50 @@ export function bootstrap(): void {
     menu?.classList.add('hidden')
   }
 
-  // Melody flow: resume from stored progress; advance to the next exercise on tap.
-  const startMelody = (id: string): void => {
-    const exercise = findExercise(id)
-    runChart(new MelodyMode(exercise), exercise.title, deps, engine => {
-      store.record({ exerciseId: exercise.id, timestamp: Date.now(), summary: engine.summary() })
-      refreshReport()
-      if (status) status.textContent = formatSummary(engine.summary())
-      onceContinue(() => {
-        const nextMap = buildMasteryMap(CURRICULUM, sid => store.sessionsFor(sid))
-        startMelody(pickCurrentExerciseId(nextMap))
+  const backBtn = document.getElementById('back-menu')
+
+  // Melody flow: a self-contained chaining activity. The ← Menu button (shown for
+  // the whole session, including the result banner) exits at any time; otherwise
+  // it auto-advances to the next exercise from stored progress.
+  const startMelody = (startId: string): void => {
+    let alive = true
+    let stopChart: (() => void) | null = null
+    let timer = 0
+    const exit = (): void => {
+      if (!alive) return
+      alive = false
+      stopChart?.()
+      window.clearTimeout(timer)
+      backBtn?.removeEventListener('click', exit)
+      backBtn?.classList.add('hidden')
+      if (status) status.textContent = ''
+      showMenu()
+    }
+    backBtn?.addEventListener('click', exit)
+    backBtn?.classList.remove('hidden')
+
+    const playOne = (id: string): void => {
+      if (!alive) return
+      const exercise = findExercise(id)
+      stopChart = runChart(new MelodyMode(exercise), exercise.title, deps, engine => {
+        if (!alive) return
+        store.record({ exerciseId: exercise.id, timestamp: Date.now(), summary: engine.summary() })
+        refreshReport()
+        if (status) status.textContent = formatSummary(engine.summary())
+        timer = window.setTimeout(() => {
+          if (!alive) return
+          const nextMap = buildMasteryMap(CURRICULUM, sid => store.sessionsFor(sid))
+          playOne(pickCurrentExerciseId(nextMap))
+        }, 2800)
       })
-    })
+    }
+    playOne(startId)
   }
 
   const resumeMelody = (): void => {
     const map = buildMasteryMap(CURRICULUM, id => store.sessionsFor(id))
     startMelody(pickCurrentExerciseId(map))
   }
-
-  const backBtn = document.getElementById('back-menu')
 
   // Cycles through ECHO_PHRASES across echo runs (deterministic, no Date.now()).
   let echoIndex = 0
@@ -725,14 +742,32 @@ export function bootstrap(): void {
     rafId = requestAnimationFrame(loop)
   }
 
-  // Scale flow: run the scale once; record a session, then return to the menu on tap.
+  // Scale flow: run the scale once; record a session, then auto-return to the menu.
+  // The ← Menu button exits at any time during play or the result banner.
   const startScale = (scaleId: string): void => {
+    let alive = true
+    let stopChart: (() => void) | null = null
+    let timer = 0
+    const exit = (): void => {
+      if (!alive) return
+      alive = false
+      stopChart?.()
+      window.clearTimeout(timer)
+      backBtn?.removeEventListener('click', exit)
+      backBtn?.classList.add('hidden')
+      if (status) status.textContent = ''
+      showMenu()
+    }
+    backBtn?.addEventListener('click', exit)
+    backBtn?.classList.remove('hidden')
+
     const spec = SCALES.find(s => s.id === scaleId) ?? SCALES[0]
-    runChart(new ScaleMode(spec), spec.title, deps, engine => {
+    stopChart = runChart(new ScaleMode(spec), spec.title, deps, engine => {
+      if (!alive) return
       store.record({ exerciseId: spec.id, timestamp: Date.now(), summary: engine.summary() })
       refreshReport()
       if (status) status.textContent = formatSummary(engine.summary())
-      onceContinue(showMenu)
+      timer = window.setTimeout(() => exit(), 3000)
     })
   }
 
