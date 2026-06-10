@@ -129,6 +129,26 @@
         font-size: 0.9rem;
         color: #b8b8c4;
       }
+      #back-menu {
+        position: fixed;
+        top: 0.75rem;
+        left: 0.75rem;
+        z-index: 25;
+        padding: 0.5rem 0.9rem;
+        border: 1px solid rgba(232, 232, 239, 0.25);
+        border-radius: 0.5rem;
+        background: rgba(20, 20, 30, 0.85);
+        color: #e8e8ef;
+        font-size: 1rem;
+        line-height: 1;
+        cursor: pointer;
+      }
+      #back-menu:hover {
+        background: rgba(40, 40, 60, 0.95);
+      }
+      #back-menu.hidden {
+        display: none;
+      }
     </style>
   </head>
   <body>
@@ -145,9 +165,11 @@
         <button class="menu-btn" type="button" data-activity="melody">Melody</button>
         <button class="menu-btn" type="button" data-activity="c-major-up">Scale — C Major (up)</button>
         <button class="menu-btn" type="button" data-activity="c-major-updown">Scale — C Major (up/down)</button>
+        <button class="menu-btn" type="button" data-activity="free">Free play</button>
       </div>
       <div id="menu-status" class="menu-status"></div>
     </div>
+    <button id="back-menu" class="hidden" type="button">← Menu</button>
     <script type="module" src="/src/main.ts"></script>
   </body>
 </html>

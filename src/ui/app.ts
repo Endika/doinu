@@ -267,6 +267,57 @@ export function bootstrap(): void {
     startMelody(pickCurrentExerciseId(map))
   }
 
+  const backBtn = document.getElementById('back-menu')
+
+  /**
+   * Free-play sandbox: no falling notes, no scoring. Subscribes to the raw
+   * selected adapter to track held notes, and draws the keyboard each frame so
+   * pressed keys glow in their pitch colour (no expected notes → the keyboard's
+   * "free" feedback path). Audio is already produced by the global synth
+   * listener, so this does NOT trigger sound. A `running` flag guards the loop
+   * and the (un-removable) adapter listener, so a stale write to `activeNotes`
+   * after exit is harmless.
+   */
+  const startFreePlay = (d: ExerciseDeps, s: Synth): void => {
+    s.resume()
+    const activeNotes = new Set<number>()
+    let running = true
+
+    d.selected.onEvent(e => {
+      if (!running) return
+      if (e.type === 'on') activeNotes.add(e.note)
+      else activeNotes.delete(e.note)
+    })
+
+    sizeCanvas(d.stageCanvas)
+    sizeCanvas(d.keysCanvas)
+    const stageCtx = d.stageCanvas?.getContext('2d') ?? null
+    const keysCtx = d.keysCanvas?.getContext('2d') ?? null
+    if (stageCtx && d.stageCanvas) stageCtx.clearRect(0, 0, d.stageCanvas.width, d.stageCanvas.height)
+    const keyboard = new Keyboard(keysCtx)
+
+    if (d.status) d.status.textContent = 'Free play — press any key'
+
+    let rafId = 0
+    const loop = (): void => {
+      if (!running) return
+      keyboard.draw(activeNotes)
+      rafId = requestAnimationFrame(loop)
+    }
+    rafId = requestAnimationFrame(loop)
+
+    const exit = (): void => {
+      running = false
+      cancelAnimationFrame(rafId)
+      backBtn?.removeEventListener('click', exit)
+      backBtn?.classList.add('hidden')
+      if (d.status) d.status.textContent = ''
+      showMenu()
+    }
+    backBtn?.addEventListener('click', exit)
+    backBtn?.classList.remove('hidden')
+  }
+
   // Scale flow: run the scale once; record a session, then return to the menu on tap.
   const startScale = (scaleId: string): void => {
     const spec = SCALES.find(s => s.id === scaleId) ?? SCALES[0]
@@ -287,6 +338,7 @@ export function bootstrap(): void {
       hideMenu()
       const activity = btn.dataset.activity
       if (activity === 'melody') resumeMelody()
+      else if (activity === 'free') startFreePlay(deps, synth)
       else startScale(activity ?? '')
     })
   })
