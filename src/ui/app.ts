@@ -11,6 +11,7 @@ import { ScaleMode, SCALES } from '../modes/scale-mode'
 import { SequenceMatcher, ECHO_PHRASES } from '../modes/echo-mode'
 import { MemoryGame, MEMORY_NOTES } from '../modes/memory-mode'
 import { NoteFindGame, NOTE_FIND_NOTES } from '../modes/note-find-mode'
+import { scoreRhythm, beatTimes } from '../modes/rhythm'
 import type { Mode } from '../modes/mode'
 import { Synth } from '../audio/synth'
 import { CURRICULUM, type Exercise } from '../content/curriculum'
@@ -944,6 +945,109 @@ export function bootstrap(): void {
     rafId = requestAnimationFrame(loop)
   }
 
+  // Rhythm ("Tap the beat"): a metronome plays a steady pulse; the child taps any
+  // key on each beat. Scores timing accuracy. Chains rounds; ← Menu exits.
+  const startRhythm = (d: ExerciseDeps, s: Synth): void => {
+    s.resume()
+    const BEATS = 8
+    const BPM = 90
+    const WINDOW_MS = 200
+    const CLICK_MIDI = 84
+    let running = true
+    const activeNotes = new Set<number>()
+    const timeouts: number[] = []
+    let taps: number[] = []
+    let beats: number[] = []
+
+    sizeCanvas(d.stageCanvas)
+    sizeCanvas(d.keysCanvas)
+    const stageCtx = d.stageCanvas?.getContext('2d') ?? null
+    const keysCtx = d.keysCanvas?.getContext('2d') ?? null
+    if (stageCtx && d.stageCanvas) stageCtx.clearRect(0, 0, d.stageCanvas.width, d.stageCanvas.height)
+    const keyboard = new Keyboard(keysCtx)
+
+    d.selected.onEvent(e => {
+      if (!running) return
+      if (e.type === 'on') {
+        activeNotes.add(e.note)
+        taps.push(performance.now())
+      } else {
+        activeNotes.delete(e.note)
+      }
+    })
+
+    let rafId = 0
+    const loop = (): void => {
+      if (!running) return
+      keyboard.draw(activeNotes)
+      rafId = requestAnimationFrame(loop)
+    }
+
+    const clearTimers = (): void => {
+      for (const t of timeouts) window.clearTimeout(t)
+      timeouts.length = 0
+    }
+
+    const playRound = (): void => {
+      if (!running) return
+      taps = []
+      activeNotes.clear()
+      const start = performance.now() + 1600 // "get ready" lead-in
+      beats = beatTimes(start, BEATS, BPM)
+      if (d.status) d.status.textContent = 'Get ready… 🥁'
+      beats.forEach((t, i) => {
+        timeouts.push(
+          window.setTimeout(
+            () => {
+              if (!running) return
+              s.playSequence([{ midi: CLICK_MIDI, durMs: 100 }])
+              if (d.status) d.status.textContent = `Tap! ${i + 1} / ${BEATS} 🥁`
+            },
+            Math.max(0, t - performance.now()),
+          ),
+        )
+      })
+      const endAt = beats[beats.length - 1] + WINDOW_MS + 150
+      timeouts.push(
+        window.setTimeout(() => {
+          if (running) finishRound()
+        }, Math.max(0, endAt - performance.now())),
+      )
+    }
+
+    function finishRound(): void {
+      if (!running) return
+      const r = scoreRhythm(beats, taps, WINDOW_MS)
+      store.record({
+        exerciseId: 'rhythm',
+        timestamp: Date.now(),
+        summary: { accuracy: r.accuracy, meanTimingDevMs: r.meanDevMs, meanFindMs: 0, tempoBpm: BPM },
+      })
+      refreshReport()
+      if (d.status) d.status.textContent = praise(Math.round(r.accuracy * 100))
+      timeouts.push(
+        window.setTimeout(() => {
+          if (running) playRound()
+        }, 1800),
+      )
+    }
+
+    const exit = (): void => {
+      running = false
+      cancelAnimationFrame(rafId)
+      clearTimers()
+      backBtn?.removeEventListener('click', exit)
+      backBtn?.classList.add('hidden')
+      if (d.status) d.status.textContent = ''
+      showMenu()
+    }
+    backBtn?.addEventListener('click', exit)
+    backBtn?.classList.remove('hidden')
+
+    rafId = requestAnimationFrame(loop)
+    playRound()
+  }
+
   // Scale flow: run the scale once; record a session, then auto-return to the menu.
   // The ← Menu button exits at any time during play or the result banner.
   const startScale = (scaleId: string): void => {
@@ -1203,6 +1307,7 @@ export function bootstrap(): void {
       else if (activity === 'memory') startMemory(deps, synth)
       else if (activity === 'notefind') startNoteFind(deps, synth)
       else if (activity === 'ear') startEar(deps, synth)
+      else if (activity === 'rhythm') startRhythm(deps, synth)
       else startScale(activity ?? '')
     })
   })
