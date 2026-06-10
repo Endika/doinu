@@ -18,6 +18,9 @@ import { MetricsStore } from '../progress/metrics-store'
 import { buildMasteryMap, type MasteryEntry, type MasteryState } from '../progress/mastery'
 import { buildProgressReport, renderProgressReport } from '../progress/progress-view'
 
+/** Build-time app version, injected by Vite from package.json. */
+declare const __APP_VERSION__: string
+
 /** Hit-window half-width (ms) shared by the engine matcher and the on-screen guide. */
 const WINDOW_MS = 150
 /** Falling-note speed in pixels per millisecond (calm pace for young learners). */
@@ -212,6 +215,22 @@ export function bootstrap(): void {
 
   setupReportToggle()
   const reportEl = document.getElementById('report')
+
+  // Version footer on the start screen (matches the sister apps' format).
+  const versionEl = document.getElementById('version')
+  if (versionEl) versionEl.textContent = `v${__APP_VERSION__}`
+
+  // Give the status banner a celebratory "pop" every time its text changes.
+  if (status) {
+    const banner = status
+    const obs = new MutationObserver(() => {
+      if (!banner.textContent) return
+      banner.classList.remove('pop')
+      void banner.offsetWidth // force reflow so the animation restarts
+      banner.classList.add('pop')
+    })
+    obs.observe(banner, { childList: true, characterData: true, subtree: true })
+  }
 
   const env: Env = { hasWebMidi: 'requestMIDIAccess' in navigator }
   const selected = selectAdapter(env)
