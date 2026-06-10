@@ -1,13 +1,35 @@
 import type { InputAdapter, Capabilities } from '../core/input-adapter'
 import type { InputEvent } from '../core/events'
 import { MidiInputAdapter } from '../core/midi-adapter'
-import { perfClock } from '../core/clock'
+import { perfClock, offsetClock } from '../core/clock'
 import { Engine } from '../engine/engine'
 import type { Summary } from '../engine/scoring'
-import { Renderer } from '../render/renderer'
+import { Renderer, leadInMs, expectedNotesAt } from '../render/renderer'
 import { Keyboard } from '../render/keyboard'
 import { MelodyMode } from '../modes/melody-mode'
 import { CURRICULUM, type Exercise } from '../content/curriculum'
+
+/** Hit-window half-width (ms) shared by the engine matcher and the on-screen guide. */
+const WINDOW_MS = 150
+/** Falling-note speed in pixels per millisecond (calm pace for young learners). */
+const PX_PER_MS = 0.15
+
+/**
+ * Wraps an input adapter so emitted event times are translated onto the
+ * song-relative timeline (raw `performance.now()` → song time). This keeps the
+ * matcher's event times on the same origin as the 0-based chart.
+ */
+class SongTimeAdapter implements InputAdapter {
+  capabilities: Capabilities
+  constructor(private readonly inner: InputAdapter, private readonly origin: number) {
+    this.capabilities = inner.capabilities
+  }
+  onEvent(cb: (e: InputEvent) => void): void {
+    this.inner.onEvent(e => cb({ ...e, time: e.time - this.origin }))
+  }
+  start(): Promise<void> { return this.inner.start() }
+  stop(): void { this.inner.stop() }
+}
 
 export interface Env {
   hasWebMidi: boolean
@@ -75,50 +97,56 @@ function formatSummary(s: Summary): string {
 export function bootstrap(): void {
   if (typeof document === 'undefined') return
 
-  const canvas = document.getElementById('stage') as HTMLCanvasElement | null
+  const stageCanvas = document.getElementById('stage') as HTMLCanvasElement | null
+  const keysCanvas = document.getElementById('keys') as HTMLCanvasElement | null
   const status = ensureStatusEl()
 
   const env: Env = { hasWebMidi: 'requestMIDIAccess' in navigator }
-  const adapter = selectAdapter(env)
+  const selected = selectAdapter(env)
 
   // No real input source: show the status message instead of starting.
-  if (adapter.statusKey) {
-    if (status) status.textContent = statusMessage(adapter.statusKey)
+  if (selected.statusKey) {
+    if (status) status.textContent = statusMessage(selected.statusKey)
     return
   }
 
   const exercise = pickExercise()
   const chart = new MelodyMode(exercise).buildChart()
 
-  const ctx = canvas?.getContext('2d') ?? null
-  sizeCanvas(canvas)
+  sizeCanvas(stageCanvas)
+  sizeCanvas(keysCanvas)
+  const stageCtx = stageCanvas?.getContext('2d') ?? null
+  const keysCtx = keysCanvas?.getContext('2d') ?? null
 
-  const engine = new Engine(chart, adapter, perfClock, { windowMs: 150 })
+  // Falling-notes geometry + a song-relative clock whose lead-in equals the time
+  // a note takes to fall the full height, so the first note enters at the very
+  // top of the stage and reaches the hit line after a full, reactable run.
+  const hitLineY = stageCanvas ? stageCanvas.height * 0.88 : 0
+  const lead = leadInMs(hitLineY, PX_PER_MS)
+  const origin = perfClock.now() + lead
+  const songClock = offsetClock(perfClock, origin)
 
-  const pxPerMs = 0.25
-  const hitLineY = ctx ? ctx.canvas.height * 0.75 : 0
-  const renderer = new Renderer(ctx, { hitLineY, pxPerMs })
-  const keyboard = new Keyboard(null)
+  const adapter = new SongTimeAdapter(selected, origin)
+  const engine = new Engine(chart, adapter, songClock, { windowMs: WINDOW_MS })
+  const renderer = new Renderer(stageCtx, { hitLineY, pxPerMs: PX_PER_MS })
+  const keyboard = new Keyboard(keysCtx)
 
   if (status) status.textContent = exercise.title
 
   engine.start()
-  renderer.start(() => {
-    const frame = engine.frameState()
-    keyboard.draw(frame.activeNotes)
-    return frame
-  })
 
-  // Drive scoring/missed-note advancement and detect chart completion.
-  const lastStartMs = chart.targets.length
+  const lastEndMs = chart.targets.length
     ? Math.max(...chart.targets.map(t => t.startMs + t.durMs))
     : 0
-  const startedAt = perfClock.now()
 
   const loop = (): void => {
     engine.tick()
-    if (perfClock.now() - startedAt >= lastStartMs + 1000) {
-      renderer.stop()
+    const frame = engine.frameState()
+    renderer.draw(frame)
+    const expected = expectedNotesAt(frame.targets, frame.nowMs, WINDOW_MS)
+    keyboard.draw(frame.activeNotes, expected)
+
+    if (songClock.now() >= lastEndMs + 1500) {
       engine.stop()
       if (status) status.textContent = formatSummary(engine.summary())
       return

@@ -57,7 +57,12 @@ export class Keyboard {
     this.cfg = cfg
   }
 
-  draw(activeNotes: Set<number>): void {
+  /**
+   * @param activeNotes   midi notes currently held down.
+   * @param expectedNotes midi notes whose hit window is open right now (the keys
+   *                      the learner should press). Drives correct/wrong/guide feedback.
+   */
+  draw(activeNotes: Set<number>, expectedNotes: Set<number> = new Set()): void {
     const ctx = this.ctx
     if (!ctx) return
 
@@ -79,7 +84,7 @@ export class Keyboard {
     // White keys first so black keys overlay them.
     for (const { midi, index } of whites) {
       const x = index * whiteWidth
-      this.drawKey(ctx, midi, x, 0, whiteWidth, h, activeNotes, false)
+      this.drawKey(ctx, midi, x, 0, whiteWidth, h, activeNotes, expectedNotes, false)
     }
 
     // Black keys overlay between their neighbouring white keys.
@@ -92,7 +97,7 @@ export class Keyboard {
       const leftWhiteIndex = whiteIndexByMidi.get(m - 1)
       if (leftWhiteIndex === undefined) continue
       const x = (leftWhiteIndex + 1) * whiteWidth - blackWidth / 2
-      this.drawKey(ctx, m, x, 0, blackWidth, blackHeight, activeNotes, true)
+      this.drawKey(ctx, m, x, 0, blackWidth, blackHeight, activeNotes, expectedNotes, true)
     }
   }
 
@@ -104,22 +109,47 @@ export class Keyboard {
     width: number,
     height: number,
     activeNotes: Set<number>,
+    expectedNotes: Set<number>,
     black: boolean,
   ): void {
     const active = activeNotes.has(midi)
+    const expected = expectedNotes.has(midi)
+    const pitchColor = colorForPitchClass(noteFromMidi(midi).pitchClass)
+
+    // Feedback resolution:
+    //   correct  = pressed AND it was expected      → green
+    //   wrong    = pressed while something else was expected → amber
+    //   free     = pressed with nothing expected     → its pitch colour
+    //   guide    = not pressed but expected ("press me") → its pitch colour
+    let fill = black ? '#1a1a1a' : '#f5f5f5'
+    let glow: string | null = null
+    let alpha = 1
+    if (active && expected) {
+      fill = '#34d399'
+      glow = '#34d399'
+    } else if (active && expectedNotes.size > 0) {
+      fill = '#f59e0b'
+      glow = '#f59e0b'
+    } else if (active) {
+      fill = pitchColor
+      glow = pitchColor
+    } else if (expected) {
+      fill = pitchColor
+      glow = pitchColor
+      alpha = 0.85
+    }
 
     ctx.save()
-    if (active) {
-      const color = colorForPitchClass(noteFromMidi(midi).pitchClass)
-      ctx.fillStyle = color
-      ctx.shadowColor = color
-      ctx.shadowBlur = 16
-    } else {
-      ctx.fillStyle = black ? '#1a1a1a' : '#f5f5f5'
+    ctx.globalAlpha = alpha
+    if (glow) {
+      ctx.shadowColor = glow
+      ctx.shadowBlur = 18
     }
+    ctx.fillStyle = fill
     ctx.fillRect(x, y, width, height)
 
     ctx.shadowBlur = 0
+    ctx.globalAlpha = 1
     ctx.lineWidth = 1
     ctx.strokeStyle = black ? '#000000' : '#999999'
     ctx.strokeRect(x, y, width, height)

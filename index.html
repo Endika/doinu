@@ -13,11 +13,24 @@
         background: #0a0a0f;
         color: #e8e8ef;
         font-family: system-ui, sans-serif;
+        overflow: hidden;
+      }
+      #app {
+        display: flex;
+        flex-direction: column;
+        width: 100vw;
+        height: 100vh;
       }
       #stage {
         display: block;
-        width: 100vw;
-        height: 100vh;
+        flex: 1 1 auto;
+        width: 100%;
+        min-height: 0;
+      }
+      #keys {
+        display: block;
+        flex: 0 0 26vh;
+        width: 100%;
       }
       #status {
         position: fixed;
@@ -28,11 +41,15 @@
         white-space: pre-line;
         font-size: 1rem;
         pointer-events: none;
+        text-shadow: 0 1px 4px rgba(0, 0, 0, 0.8);
       }
     </style>
   </head>
   <body>
-    <canvas id="stage"></canvas>
+    <div id="app">
+      <canvas id="stage"></canvas>
+      <canvas id="keys"></canvas>
+    </div>
     <div id="status"></div>
     <script type="module" src="/src/main.ts"></script>
   </body>

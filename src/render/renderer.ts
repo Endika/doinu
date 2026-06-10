@@ -25,6 +25,32 @@ export function noteY(
   return cfg.hitLineY - (target.startMs - nowMs) * cfg.pxPerMs
 }
 
+/**
+ * Lead-in time: how long a note takes to fall from the top of the stage to the
+ * hit line. Tying the lead-in to the speed makes the first note enter exactly at
+ * the top of the screen at song start, giving full reaction time.
+ */
+export function leadInMs(hitLineY: number, pxPerMs: number): number {
+  return pxPerMs > 0 ? hitLineY / pxPerMs : 0
+}
+
+/**
+ * The midi notes whose hit window is open at `nowMs` (i.e. the notes the learner
+ * is expected to be playing right now). Drives the on-screen "press this" guide
+ * and correct/wrong feedback.
+ */
+export function expectedNotesAt(
+  targets: { midi: number; startMs: number }[],
+  nowMs: number,
+  windowMs: number,
+): Set<number> {
+  const out = new Set<number>()
+  for (const t of targets) {
+    if (Math.abs(nowMs - t.startMs) <= windowMs) out.add(t.midi)
+  }
+  return out
+}
+
 /** Horizontal position (0..1) of a midi across the configured piano range. */
 export function midiToFraction(midi: number, low = MIDI_LOW, high = MIDI_HIGH): number {
   if (high <= low) return 0
