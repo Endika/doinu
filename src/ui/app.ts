@@ -1015,8 +1015,10 @@ export function bootstrap(): void {
     showMenu()
   })
 
-  // Wire the menu buttons. A click is the user gesture that may start audio.
-  const buttons = document.querySelectorAll<HTMLButtonElement>('.menu-btn')
+  // Wire the MAIN menu buttons only (those with a data-activity). NOT the song
+  // list buttons — they are also `.menu-btn` but have their own handlers; a broad
+  // `.menu-btn` selector double-bound them and fired startScale('') over the song.
+  const buttons = document.querySelectorAll<HTMLButtonElement>('#menu .menu-btn[data-activity]')
   buttons.forEach(btn => {
     btn.addEventListener('click', () => {
       if (noInput) return // buttons inert without a real input source
