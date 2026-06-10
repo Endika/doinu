@@ -16,6 +16,13 @@ import { Synth } from '../audio/synth'
 import { CURRICULUM, type Exercise } from '../content/curriculum'
 import { SONGS, type Song } from '../content/songs'
 import { SongMode, songHands, type HandSelection } from '../modes/song-mode'
+import {
+  parseMidi,
+  chartMode,
+  filterChartByHand,
+  MidiImportError,
+  type ImportedSong,
+} from '../content/midi-import'
 import { MetricsStore } from '../progress/metrics-store'
 import { buildMasteryMap, type MasteryEntry, type MasteryState } from '../progress/mastery'
 import { buildProgressReport, renderProgressReport } from '../progress/progress-view'
@@ -1013,6 +1020,69 @@ export function bootstrap(): void {
     showMenu()
   })
 
+  // MIDI import: load a .mid from the device, parse it locally (no network),
+  // split into hands and play it in practice (wait) mode. Defaults to BOTH hands
+  // so the learner hears the whole song. The in-game ← Menu returns to the main
+  // menu (same exit pattern as startScale). Recorded under exerciseId 'import'.
+  const fileInput = document.getElementById('midi-file') as HTMLInputElement | null
+
+  const playImported = (imported: ImportedSong): void => {
+    synth.resume()
+    hideMenu()
+    let alive = true
+    let stopRun: (() => void) | null = null
+    let timer = 0
+    const exit = (): void => {
+      if (!alive) return
+      alive = false
+      stopRun?.()
+      window.clearTimeout(timer)
+      backBtn?.removeEventListener('click', exit)
+      backBtn?.classList.add('hidden')
+      if (status) status.textContent = ''
+      showMenu()
+    }
+    backBtn?.addEventListener('click', exit)
+    backBtn?.classList.remove('hidden')
+
+    const chart = filterChartByHand(imported.chart, 'both')
+    stopRun = runChartWaiting(chartMode(chart), imported.title, deps, engine => {
+      if (!alive) return
+      store.record({ exerciseId: 'import', timestamp: Date.now(), summary: engine.summary() })
+      refreshReport()
+      if (status) status.textContent = formatSummary(engine.summary())
+      timer = window.setTimeout(() => exit(), 2500)
+    })
+  }
+
+  const startImport = (): void => {
+    fileInput?.click()
+  }
+
+  fileInput?.addEventListener('change', () => {
+    const file = fileInput.files?.[0]
+    // Reset the value up front so re-picking the SAME file fires `change` again.
+    fileInput.value = ''
+    if (!file) return
+    void file
+      .arrayBuffer()
+      .then(buffer => {
+        try {
+          const imported = parseMidi(buffer, file.name.replace(/\.midi?$/i, ''))
+          playImported(imported)
+        } catch (err) {
+          if (err instanceof MidiImportError) {
+            if (menuStatus) menuStatus.textContent = 'Could not read that MIDI file 🙈'
+            return
+          }
+          throw err
+        }
+      })
+      .catch(() => {
+        if (menuStatus) menuStatus.textContent = 'Could not read that MIDI file 🙈'
+      })
+  })
+
   // Progress screen: the parent-facing report, opened from the menu.
   const progressOverlay = document.getElementById('progress')
   const progressBack = document.getElementById('progress-back')
@@ -1037,6 +1107,7 @@ export function bootstrap(): void {
       const activity = btn.dataset.activity
       if (activity === 'melody') resumeMelody()
       else if (activity === 'songs') showSongs()
+      else if (activity === 'import') startImport()
       else if (activity === 'progress') openProgress()
       else if (activity === 'practice') resumePractice()
       else if (activity === 'free') startFreePlay(deps, synth)
