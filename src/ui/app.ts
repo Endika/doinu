@@ -9,6 +9,7 @@ import { Keyboard } from '../render/keyboard'
 import { MelodyMode } from '../modes/melody-mode'
 import { ScaleMode, SCALES } from '../modes/scale-mode'
 import { SequenceMatcher, ECHO_PHRASES } from '../modes/echo-mode'
+import { MemoryGame, MEMORY_NOTES } from '../modes/memory-mode'
 import type { Mode } from '../modes/mode'
 import { Synth } from '../audio/synth'
 import { CURRICULUM, type Exercise } from '../content/curriculum'
@@ -454,6 +455,153 @@ export function bootstrap(): void {
     playRound()
   }
 
+  /**
+   * Memory (Simón): the app plays a growing sequence (LISTEN); the child repeats
+   * it (REPEAT). Each won round APPENDS one note and replays the longer sequence,
+   * chaining automatically; a wrong press ends the round and restarts from length
+   * 1, keeping the best. Modeled on `startEcho`: a per-session `running` flag
+   * guards the rAF loop and the (un-removable) adapter listener; the LISTEN phase
+   * highlights each sounding note; REPEAT shows the next expected note as a guide
+   * plus the child's held notes. `#back-menu` is the only way out.
+   *
+   * Sessions are recorded with `exerciseId:'memory'` and the standard `Summary`
+   * shape — accuracy 1 on a won round / 0 on a lost one — and the reached LEVEL
+   * is encoded via `tempoBpm` (won: `sequence.length`, lost: `longest`) so the
+   * progress report surfaces progress without changing the `Summary` shape.
+   */
+  const startMemory = (d: ExerciseDeps, s: Synth): void => {
+    s.resume()
+    const game = new MemoryGame(() => MEMORY_NOTES[Math.floor(Math.random() * MEMORY_NOTES.length)])
+    let running = true
+    let phase: 'listen' | 'repeat' | 'done' = 'listen'
+    let listenIndex = -1 // index into the sequence while the app is playing it
+    let ptr = 0 // local repeat pointer, mirrors the game's internal pointer
+    const activeNotes = new Set<number>()
+
+    sizeCanvas(d.stageCanvas)
+    sizeCanvas(d.keysCanvas)
+    const stageCtx = d.stageCanvas?.getContext('2d') ?? null
+    const keysCtx = d.keysCanvas?.getContext('2d') ?? null
+    if (stageCtx && d.stageCanvas) stageCtx.clearRect(0, 0, d.stageCanvas.width, d.stageCanvas.height)
+    const keyboard = new Keyboard(keysCtx)
+
+    // ONE persistent input listener (guarded by `running`). During REPEAT it
+    // feeds the game; otherwise it just tracks held notes for the glow.
+    d.selected.onEvent(e => {
+      if (!running) return
+      if (e.type === 'on') {
+        activeNotes.add(e.note)
+        if (phase === 'repeat') {
+          const r = game.press(e.note)
+          if (r === 'correct') {
+            ptr++
+          } else if (r === 'complete') {
+            winRound()
+          } else {
+            loseRound()
+          }
+        }
+      } else {
+        activeNotes.delete(e.note)
+      }
+    })
+
+    // ONE rAF loop: LISTEN highlights the sounding note; REPEAT shows the next
+    // expected note as a guide plus the child's held notes.
+    let rafId = 0
+    const loop = (): void => {
+      if (!running) return
+      const seq = game.sequence
+      if (phase === 'listen') {
+        const sounding = listenIndex >= 0 && listenIndex < seq.length
+        keyboard.draw(new Set(), sounding ? new Set([seq[listenIndex]]) : new Set<number>())
+      } else {
+        const next =
+          phase === 'repeat' && ptr < seq.length ? new Set([seq[ptr]]) : new Set<number>()
+        keyboard.draw(activeNotes, next)
+      }
+      rafId = requestAnimationFrame(loop)
+    }
+
+    // LISTEN: append a note, play the (longer) sequence highlighting each note as
+    // it sounds, then switch to REPEAT.
+    const playRound = (): void => {
+      if (!running) return
+      game.startRound()
+      phase = 'listen'
+      listenIndex = -1
+      ptr = 0
+      activeNotes.clear()
+      if (d.status) d.status.textContent = 'Watch… 👀'
+      const seq = game.sequence
+      let step = 0
+      const advanceListen = (): void => {
+        if (!running || phase !== 'listen') return
+        listenIndex = step
+        step++
+        if (step < seq.length) window.setTimeout(advanceListen, 500)
+      }
+      advanceListen()
+      s.playSequence(
+        seq.map(n => ({ midi: n, durMs: 500 })),
+        () => {
+          if (!running) return
+          listenIndex = -1
+          phase = 'repeat'
+          if (d.status) d.status.textContent = 'Your turn! 🎶'
+        },
+      )
+    }
+
+    // Round won: level up, record, then chain a longer sequence.
+    function winRound(): void {
+      if (!running) return
+      phase = 'done'
+      if (d.status) d.status.textContent = `Level ${game.sequence.length}! 🌟`
+      store.record({
+        exerciseId: 'memory',
+        timestamp: Date.now(),
+        summary: { accuracy: 1, meanTimingDevMs: 0, meanFindMs: 0, tempoBpm: game.sequence.length },
+      })
+      refreshReport()
+      window.setTimeout(() => {
+        if (running) playRound()
+      }, 1200)
+    }
+
+    // Round lost: record, then restart from length 1 (keep the best).
+    function loseRound(): void {
+      if (!running) return
+      phase = 'done'
+      if (d.status) d.status.textContent = `Oops! Best: ${game.longest} 🙈`
+      store.record({
+        exerciseId: 'memory',
+        timestamp: Date.now(),
+        summary: { accuracy: 0, meanTimingDevMs: 0, meanFindMs: 0, tempoBpm: game.longest },
+      })
+      refreshReport()
+      window.setTimeout(() => {
+        if (!running) return
+        game.reset()
+        playRound()
+      }, 1500)
+    }
+
+    const exit = (): void => {
+      running = false
+      cancelAnimationFrame(rafId)
+      backBtn?.removeEventListener('click', exit)
+      backBtn?.classList.add('hidden')
+      if (d.status) d.status.textContent = ''
+      showMenu()
+    }
+    backBtn?.addEventListener('click', exit)
+    backBtn?.classList.remove('hidden')
+
+    rafId = requestAnimationFrame(loop)
+    playRound()
+  }
+
   // Scale flow: run the scale once; record a session, then return to the menu on tap.
   const startScale = (scaleId: string): void => {
     const spec = SCALES.find(s => s.id === scaleId) ?? SCALES[0]
@@ -476,6 +624,7 @@ export function bootstrap(): void {
       if (activity === 'melody') resumeMelody()
       else if (activity === 'free') startFreePlay(deps, synth)
       else if (activity === 'echo') startEcho(deps, synth)
+      else if (activity === 'memory') startMemory(deps, synth)
       else startScale(activity ?? '')
     })
   })
