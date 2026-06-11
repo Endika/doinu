@@ -6,7 +6,7 @@
 //
 // Pitch reference: middle C = 60. C major unless noted.
 
-import { C4, D4, E4, F4, G4, A4, Bb4, C5, G3 } from '../core/pitch'
+import { C4, D4, E4, F4, G4, A4, B4, Bb4, C5, G3 } from '../core/pitch'
 
 /** A right-hand melody note: pitch + duration in beats (sequential). */
 export interface MelodyNote {
@@ -32,7 +32,7 @@ export interface Song {
 
 // Short local aliases over the single source of truth (core/pitch). C5/G3 come
 // straight from pitch; the left-hand roots use plain arithmetic (e.g. C - 12).
-const C = C4, D = D4, E = E4, F = F4, G = G4, A = A4, Bb = Bb4
+const C = C4, D = D4, E = E4, F = F4, G = G4, A = A4, B = B4, Bb = Bb4
 
 export const SONGS: Song[] = [
   {
@@ -165,6 +165,47 @@ export const SONGS: Song[] = [
       { midi: F, dur: 1 }, { midi: E, dur: 1 }, { midi: D, dur: 2 },
       { midi: Bb, dur: 0.75 }, { midi: Bb, dur: 0.25 }, { midi: A, dur: 1 }, { midi: F, dur: 1 },
       { midi: G, dur: 1 }, { midi: F, dur: 2 },
+    ],
+  },
+  {
+    id: 'row',
+    title: 'Row Your Boat 🚣',
+    bpm: 100,
+    right: [
+      { midi: C, dur: 1 }, { midi: C, dur: 1 }, { midi: C, dur: 0.75 }, { midi: D, dur: 0.25 }, { midi: E, dur: 1 },
+      { midi: E, dur: 0.75 }, { midi: D, dur: 0.25 }, { midi: E, dur: 0.75 }, { midi: F, dur: 0.25 }, { midi: G, dur: 2 },
+      { midi: C5, dur: 0.5 }, { midi: C5, dur: 0.5 }, { midi: C5, dur: 0.5 }, { midi: G, dur: 0.5 }, { midi: G, dur: 0.5 }, { midi: G, dur: 0.5 },
+      { midi: E, dur: 0.5 }, { midi: E, dur: 0.5 }, { midi: E, dur: 0.5 }, { midi: C, dur: 0.5 }, { midi: C, dur: 0.5 }, { midi: C, dur: 0.5 },
+      { midi: G, dur: 0.75 }, { midi: F, dur: 0.25 }, { midi: E, dur: 0.75 }, { midi: D, dur: 0.25 }, { midi: C, dur: 2 },
+    ],
+  },
+  {
+    id: 'auclair',
+    title: 'Au Clair de la Lune 🌙',
+    bpm: 100,
+    right: [
+      { midi: C, dur: 1 }, { midi: C, dur: 1 }, { midi: C, dur: 1 }, { midi: D, dur: 1 },
+      { midi: E, dur: 2 }, { midi: D, dur: 2 },
+      { midi: C, dur: 1 }, { midi: E, dur: 1 }, { midi: D, dur: 1 }, { midi: D, dur: 1 }, { midi: C, dur: 4 },
+      { midi: D, dur: 1 }, { midi: D, dur: 1 }, { midi: D, dur: 1 }, { midi: D, dur: 1 },
+      { midi: A, dur: 2 }, { midi: A, dur: 2 },
+      { midi: D, dur: 1 }, { midi: C, dur: 1 }, { midi: B, dur: 1 }, { midi: A, dur: 1 }, { midi: G, dur: 4 },
+      { midi: C, dur: 1 }, { midi: C, dur: 1 }, { midi: C, dur: 1 }, { midi: D, dur: 1 },
+      { midi: E, dur: 2 }, { midi: D, dur: 2 },
+      { midi: C, dur: 1 }, { midi: E, dur: 1 }, { midi: D, dur: 1 }, { midi: D, dur: 1 }, { midi: C, dur: 4 },
+    ],
+  },
+  {
+    id: 'lightlyrow',
+    title: 'Lightly Row 🎶',
+    bpm: 100,
+    right: [
+      { midi: G, dur: 1 }, { midi: E, dur: 1 }, { midi: E, dur: 2 },
+      { midi: F, dur: 1 }, { midi: D, dur: 1 }, { midi: D, dur: 2 },
+      { midi: C, dur: 1 }, { midi: D, dur: 1 }, { midi: E, dur: 1 }, { midi: F, dur: 1 }, { midi: G, dur: 2 },
+      { midi: G, dur: 1 }, { midi: E, dur: 1 }, { midi: E, dur: 2 },
+      { midi: F, dur: 1 }, { midi: D, dur: 1 }, { midi: D, dur: 2 },
+      { midi: C, dur: 1 }, { midi: E, dur: 1 }, { midi: G, dur: 1 }, { midi: E, dur: 1 }, { midi: C, dur: 2 },
     ],
   },
 ]
