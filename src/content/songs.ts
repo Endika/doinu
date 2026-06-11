@@ -6,6 +6,8 @@
 //
 // Pitch reference: middle C = 60. C major unless noted.
 
+import { C4, D4, E4, F4, G4, A4, Bb4, C5, G3 } from '../core/pitch'
+
 /** A right-hand melody note: pitch + duration in beats (sequential). */
 export interface MelodyNote {
   midi: number
@@ -28,15 +30,9 @@ export interface Song {
   left?: HandNote[]
 }
 
-const C = 60
-const D = 62
-const E = 64
-const F = 65
-const G = 67
-const A = 69
-const C5 = 72
-const Bb = 70
-const G3 = 55
+// Short local aliases over the single source of truth (core/pitch). C5/G3 come
+// straight from pitch; the left-hand roots use plain arithmetic (e.g. C - 12).
+const C = C4, D = D4, E = E4, F = F4, G = G4, A = A4, Bb = Bb4
 
 export const SONGS: Song[] = [
   {
