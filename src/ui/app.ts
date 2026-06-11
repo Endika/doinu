@@ -18,6 +18,7 @@ import type { Mode } from '../modes/mode'
 import { Synth } from '../audio/synth'
 import { CURRICULUM, type Exercise } from '../content/curriculum'
 import { SONGS, type Song } from '../content/songs'
+import { STUDIES } from '../content/studies'
 import { SongMode, songHands, HandSelection } from '../modes/song-mode'
 import {
   parseMidi,
@@ -1218,11 +1219,13 @@ export function bootstrap(): void {
     })
   }
 
-  // Build the song list once.
+  // Build the songs + studies list once. A uniform card per piece: a title line
+  // and an equal-width row of hand buttons (one "Play" for right-hand-only pieces,
+  // or Right/Left/Both). Studies (generated scales/arpeggios/patterns) follow the
+  // real songs under their own section header.
   if (songList && songList.childElementCount === 0) {
-    for (const song of SONGS) {
-      // Uniform card per song: a title line, then an equal-width row of hand
-      // buttons (one "Play" for right-hand-only songs, or Right/Left/Both).
+    const list = songList
+    const addCard = (song: Song): void => {
       const card = document.createElement('div')
       card.className = 'song-card'
 
@@ -1250,8 +1253,18 @@ export function bootstrap(): void {
         addHand(t('hand.both'), HandSelection.Both)
       }
       card.appendChild(handsRow)
-      songList.appendChild(card)
+      list.appendChild(card)
     }
+    const addSection = (label: string): void => {
+      const h = document.createElement('div')
+      h.className = 'song-section'
+      h.textContent = label
+      list.appendChild(h)
+    }
+
+    SONGS.forEach(addCard)
+    addSection(t('songs.studies'))
+    STUDIES.forEach(addCard)
   }
   songsBack?.addEventListener('click', () => {
     hideSongs()

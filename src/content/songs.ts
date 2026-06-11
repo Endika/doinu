@@ -208,4 +208,42 @@ export const SONGS: Song[] = [
       { midi: C, dur: 1 }, { midi: E, dur: 1 }, { midi: G, dur: 1 }, { midi: E, dur: 1 }, { midi: C, dur: 2 },
     ],
   },
+  {
+    id: 'threemice',
+    title: 'Three Blind Mice 🐭',
+    bpm: 100,
+    right: [
+      { midi: E, dur: 1 }, { midi: D, dur: 1 }, { midi: C, dur: 2 },
+      { midi: E, dur: 1 }, { midi: D, dur: 1 }, { midi: C, dur: 2 },
+      { midi: G, dur: 1 }, { midi: F, dur: 1 }, { midi: F, dur: 1 }, { midi: E, dur: 2 },
+      { midi: G, dur: 1 }, { midi: F, dur: 1 }, { midi: F, dur: 1 }, { midi: E, dur: 2 },
+    ],
+  },
+  {
+    id: 'london',
+    title: 'London Bridge 🌉',
+    bpm: 110,
+    right: [
+      { midi: G, dur: 1 }, { midi: A, dur: 1 }, { midi: G, dur: 1 }, { midi: F, dur: 1 },
+      { midi: E, dur: 1 }, { midi: F, dur: 1 }, { midi: G, dur: 2 },
+      { midi: D, dur: 1 }, { midi: E, dur: 1 }, { midi: F, dur: 2 },
+      { midi: E, dur: 1 }, { midi: F, dur: 1 }, { midi: G, dur: 2 },
+      { midi: G, dur: 1 }, { midi: A, dur: 1 }, { midi: G, dur: 1 }, { midi: F, dur: 1 },
+      { midi: E, dur: 1 }, { midi: F, dur: 1 }, { midi: G, dur: 2 },
+      { midi: D, dur: 2 }, { midi: G, dur: 1 }, { midi: E, dur: 1 }, { midi: C, dur: 2 },
+    ],
+  },
+  {
+    id: 'yankee',
+    title: 'Yankee Doodle 🎺',
+    bpm: 120,
+    right: [
+      { midi: C, dur: 1 }, { midi: C, dur: 1 }, { midi: D, dur: 1 }, { midi: E, dur: 1 },
+      { midi: C, dur: 1 }, { midi: E, dur: 1 }, { midi: D, dur: 2 },
+      { midi: C, dur: 1 }, { midi: C, dur: 1 }, { midi: D, dur: 1 }, { midi: E, dur: 1 }, { midi: C, dur: 2 },
+      { midi: C, dur: 1 }, { midi: C, dur: 1 }, { midi: D, dur: 1 }, { midi: E, dur: 1 },
+      { midi: F, dur: 1 }, { midi: E, dur: 1 }, { midi: D, dur: 1 }, { midi: C, dur: 1 },
+      { midi: B, dur: 1 }, { midi: G, dur: 1 }, { midi: A, dur: 1 }, { midi: B, dur: 1 }, { midi: C, dur: 2 },
+    ],
+  },
 ]

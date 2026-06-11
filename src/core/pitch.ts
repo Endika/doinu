@@ -17,6 +17,7 @@ export const C5 = 72, D5 = 74, E5 = 76, F5 = 77, Fs5 = 78, G5 = 79
 export const MAJOR_TRIAD = [0, 4, 7]
 export const MINOR_TRIAD = [0, 3, 7]
 export const MAJOR_SCALE = [0, 2, 4, 5, 7, 9, 11, 12] // one octave, including the top
+export const NATURAL_MINOR_SCALE = [0, 2, 3, 5, 7, 8, 10, 12]
 
 /** Build a chord's midi notes from a root and an interval recipe (defaults to a major triad). */
 export function chord(rootMidi: number, intervals: number[] = MAJOR_TRIAD): number[] {
