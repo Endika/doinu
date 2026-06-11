@@ -1,5 +1,12 @@
 # Changelog
 
+## [0.9.0](https://github.com/Endika/doinu/compare/v0.8.0...v0.9.0) (2026-06-11)
+
+
+### Features
+
+* **content:** generated study library + 3 more songs ([b127a98](https://github.com/Endika/doinu/commit/b127a985eaf32bc3d4b59d7d01f442732b524d3e))
+
 ## [0.8.0](https://github.com/Endika/doinu/compare/v0.7.1...v0.8.0) (2026-06-11)
 
 
