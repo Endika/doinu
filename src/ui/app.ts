@@ -113,6 +113,12 @@ export function selectAdapter(env: Env, pref?: InputPref | null): SelectedAdapte
   return env.hasWebMidi ? new MidiInputAdapter() : new MicInputAdapter()
 }
 
+/** Whether to freeze the score until the right note is played. Default on; only
+ * the explicit stored value 'off' disables it (useful when the mic mis-detects). */
+export function waitEnabled(stored: string | null): boolean {
+  return stored !== 'off'
+}
+
 /**
  * Pure: pick which exercise to play now. Resume at the first `inProgress`
  * exercise; if every exercise is `mastered`, fall back to the LAST exercise id
@@ -336,6 +342,10 @@ export function bootstrap(): void {
   const langToggle = document.getElementById('lang-toggle')
   const progressContent = document.getElementById('progress-content')
 
+  // Reassigned once the wait toggle is wired; lets applyI18n re-label the
+  // state-dependent toggle (its text is not a static data-i18n key).
+  let refreshWaitLabel: () => void = () => {}
+
   // Paint every [data-i18n] element, the toggle label, and the CSS-driven
   // empty-progress message for the current locale.
   const applyI18n = (): void => {
@@ -344,6 +354,7 @@ export function bootstrap(): void {
       if (key) el.textContent = i18n.t(key)
     })
     progressContent?.style.setProperty('--progress-empty', `'${i18n.t('progress.empty')}'`)
+    refreshWaitLabel()
   }
 
   langToggle?.addEventListener('click', () => {
@@ -426,8 +437,34 @@ export function bootstrap(): void {
     }
   }
 
+  // "Wait for the right note" setting: when off, scores keep falling instead of
+  // freezing on an unplayed note — handy when the mic mis-detects on iPad. Read
+  // per playback launch, so flipping it applies to the next activity (no reload).
+  const WAIT_KEY = 'doinu.wait'
+  let waitForNote = waitEnabled(window.localStorage.getItem(WAIT_KEY))
+  const waitToggle = document.getElementById('wait-toggle')
+  if (waitToggle) {
+    refreshWaitLabel = () => {
+      waitToggle.textContent = waitForNote ? t('wait.on') : t('wait.off')
+    }
+    refreshWaitLabel()
+    waitToggle.addEventListener('click', () => {
+      waitForNote = !waitForNote
+      window.localStorage.setItem(WAIT_KEY, waitForNote ? 'on' : 'off')
+      refreshWaitLabel()
+    })
+  }
+
   const store = new MetricsStore(window.localStorage)
   const deps: ExerciseDeps = { stageCanvas, keysCanvas, status, selected }
+
+  // Pick the freezing or the free-falling playback per the wait setting.
+  const runPlayback = (
+    mode: Mode,
+    title: string,
+    d: ExerciseDeps,
+    onComplete: (engine: Engine) => void,
+  ): (() => void) => (waitForNote ? runChartWaiting : runChart)(mode, title, d, onComplete)
 
   const refreshReport = (): void => {
     const map = buildMasteryMap(CURRICULUM, id => store.sessionsFor(id))
@@ -1167,7 +1204,7 @@ export function bootstrap(): void {
     const playOne = (id: string): void => {
       if (!alive) return
       const exercise = findExercise(id)
-      stopRun = runChartWaiting(new MelodyMode(exercise), `${exercise.title} 🐢`, deps, engine => {
+      stopRun = runPlayback(new MelodyMode(exercise), `${exercise.title} 🐢`, deps, engine => {
         if (!alive) return
         store.record({
           exerciseId: `practice:${exercise.id}`,
@@ -1224,7 +1261,7 @@ export function bootstrap(): void {
     backBtn?.addEventListener('click', exit)
     backBtn?.classList.remove('hidden')
 
-    stopRun = runChartWaiting(new SongMode(song, sel), song.title, deps, engine => {
+    stopRun = runPlayback(new SongMode(song, sel), song.title, deps, engine => {
       if (!alive) return
       store.record({
         exerciseId: `song:${song.id}:${sel}`,
@@ -1425,7 +1462,7 @@ export function bootstrap(): void {
     backBtn?.addEventListener('click', exit)
     backBtn?.classList.remove('hidden')
 
-    stopRun = runChartWaiting(lessonMode(lesson), lesson.title, deps, engine => {
+    stopRun = runPlayback(lessonMode(lesson), lesson.title, deps, engine => {
       if (!alive) return
       store.record({ exerciseId: `path:${lesson.id}`, timestamp: Date.now(), summary: engine.summary() })
       refreshReport()
@@ -1530,7 +1567,7 @@ export function bootstrap(): void {
     }
     backBtn?.addEventListener('click', exit)
     backBtn?.classList.remove('hidden')
-    stopRun = runChartWaiting(chartMode(compositionChart(c.notes)), c.name, deps, engine => {
+    stopRun = runPlayback(chartMode(compositionChart(c.notes)), c.name, deps, engine => {
       if (!alive) return
       store.record({ exerciseId: `compose:${c.id}`, timestamp: Date.now(), summary: engine.summary() })
       refreshReport()
@@ -1703,7 +1740,7 @@ export function bootstrap(): void {
     backBtn?.classList.remove('hidden')
 
     const chart = filterChartByHand(imported.chart, HandSelection.Both)
-    stopRun = runChartWaiting(chartMode(chart), imported.title, deps, engine => {
+    stopRun = runPlayback(chartMode(chart), imported.title, deps, engine => {
       if (!alive) return
       store.record({ exerciseId: 'import', timestamp: Date.now(), summary: engine.summary() })
       refreshReport()
