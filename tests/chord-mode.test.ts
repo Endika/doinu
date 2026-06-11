@@ -1,5 +1,6 @@
 import { describe, it, expect } from 'vitest'
 import { ChordMode } from '../src/modes/chord-mode'
+import { Hand } from '../src/engine/chart'
 
 describe('chord mode', () => {
   it('emits one co-timed target per note of each chord', () => {
@@ -21,7 +22,7 @@ describe('chord mode', () => {
     // ids are unique
     expect(new Set(chart.targets.map(t => t.id)).size).toBe(9)
     // right hand
-    expect(chart.targets.every(t => t.hand === 'R')).toBe(true)
+    expect(chart.targets.every(t => t.hand === Hand.Right)).toBe(true)
   })
 
   it('supports two-note chords', () => {

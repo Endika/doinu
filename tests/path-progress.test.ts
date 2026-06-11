@@ -1,7 +1,7 @@
 import { describe, it, expect } from 'vitest'
-import { buildPathProgress, isPassed } from '../src/progress/path-progress'
+import { buildPathProgress, isPassed, PathLessonState } from '../src/progress/path-progress'
 import type { Session } from '../src/progress/metrics-store'
-import type { PathLesson } from '../src/content/path'
+import { LessonKind, type PathLesson } from '../src/content/path'
 
 function ses(accuracy: number, meanFindMs: number, timestamp: number): Session {
   return { id: `s${timestamp}`, exerciseId: 'x', timestamp, accuracy, meanFindMs, meanTimingDevMs: 0, tempoBpm: 60 }
@@ -9,10 +9,10 @@ function ses(accuracy: number, meanFindMs: number, timestamp: number): Session {
 
 // Minimal fixture: 3 buildable lessons + 1 future (soon) lesson.
 const lessons: PathLesson[] = [
-  { id: 'a', title: 'A', concept: '', kind: 'melody', milestone: 1, bpm: 60, passAccuracy: 0.7, notes: [60] },
-  { id: 'b', title: 'B', concept: '', kind: 'melody', milestone: 1, bpm: 60, passAccuracy: 0.7, notes: [62] },
-  { id: 'c', title: 'C', concept: '', kind: 'chord', milestone: 1, bpm: 60, passAccuracy: 0.6, chords: [[60, 64]] },
-  { id: 'd', title: 'D', concept: '', kind: 'twohands', milestone: 2, bpm: 60, passAccuracy: 0.7 },
+  { id: 'a', title: 'A', concept: '', kind: LessonKind.Melody, milestone: 1, bpm: 60, passAccuracy: 0.7, notes: [60] },
+  { id: 'b', title: 'B', concept: '', kind: LessonKind.Melody, milestone: 1, bpm: 60, passAccuracy: 0.7, notes: [62] },
+  { id: 'c', title: 'C', concept: '', kind: LessonKind.Chord, milestone: 1, bpm: 60, passAccuracy: 0.6, chords: [[60, 64]] },
+  { id: 'd', title: 'D', concept: '', kind: LessonKind.TwoHands, milestone: 2, bpm: 60, passAccuracy: 0.7 },
 ]
 
 function progress(map: Record<string, Session[]>): string[] {
@@ -28,24 +28,24 @@ describe('isPassed', () => {
 
 describe('buildPathProgress', () => {
   it('starts with only the first lesson current; later ones locked, future ones soon', () => {
-    expect(progress({})).toEqual(['current', 'locked', 'locked', 'soon'])
+    expect(progress({})).toEqual([PathLessonState.Current, PathLessonState.Locked, PathLessonState.Locked, PathLessonState.Soon])
   })
 
   it('passing a lesson ONCE unlocks the next (it becomes current)', () => {
-    expect(progress({ a: [ses(0.9, 100, 1)] })).toEqual(['passed', 'current', 'locked', 'soon'])
+    expect(progress({ a: [ses(0.9, 100, 1)] })).toEqual([PathLessonState.Passed, PathLessonState.Current, PathLessonState.Locked, PathLessonState.Soon])
   })
 
   it('awards mastery (⭐) after three passing sessions', () => {
     const three = [ses(0.9, 100, 1), ses(0.9, 100, 2), ses(0.9, 100, 3)]
-    expect(progress({ a: three })).toEqual(['mastered', 'current', 'locked', 'soon'])
+    expect(progress({ a: three })).toEqual([PathLessonState.Mastered, PathLessonState.Current, PathLessonState.Locked, PathLessonState.Soon])
   })
 
   it('a low-accuracy session does not unlock the next', () => {
-    expect(progress({ a: [ses(0.4, 100, 1)] })).toEqual(['current', 'locked', 'locked', 'soon'])
+    expect(progress({ a: [ses(0.4, 100, 1)] })).toEqual([PathLessonState.Current, PathLessonState.Locked, PathLessonState.Locked, PathLessonState.Soon])
   })
 
   it('milestone-2 lessons are always soon, even with sessions recorded', () => {
     expect(progress({ a: [ses(0.9, 1, 1)], b: [ses(0.9, 1, 2)], c: [ses(0.9, 1, 3)], d: [ses(0.9, 1, 4)] }))
-      .toEqual(['passed', 'passed', 'passed', 'soon'])
+      .toEqual([PathLessonState.Passed, PathLessonState.Passed, PathLessonState.Passed, PathLessonState.Soon])
   })
 })

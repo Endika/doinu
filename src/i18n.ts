@@ -7,7 +7,7 @@
  * languages.
  */
 
-export type Locale = 'en' | 'es'
+export enum Locale { En = 'en', Es = 'es' }
 
 const MESSAGES = {
   en: {
@@ -118,9 +118,9 @@ export type MessageKey = keyof typeof MESSAGES.en
  * (including an unknown stored value or absent navigator) falls back to English.
  */
 export function resolveLocale(navLang: string | undefined, stored: string | null): Locale {
-  if (stored === 'en' || stored === 'es') return stored
-  if (navLang?.toLowerCase().startsWith('es')) return 'es'
-  return 'en'
+  if (stored === Locale.En || stored === Locale.Es) return stored
+  if (navLang?.toLowerCase().startsWith('es')) return Locale.Es
+  return Locale.En
 }
 
 export function createI18n(initial: Locale): {

@@ -1,15 +1,15 @@
-import type { Chart, Target } from '../engine/chart'
+import { Hand, type Chart, type Target } from '../engine/chart'
 import type { Summary } from '../engine/scoring'
 import type { Mode, Verdict } from './mode'
 import type { Song } from '../content/songs'
 
-export type HandSelection = 'R' | 'L' | 'both'
+export enum HandSelection { Right = 'R', Left = 'L', Both = 'both' }
 
 const PASS_ACCURACY = 0.8
 
 /** Which hand selections a song offers (always R; L/both only if it has a left hand). */
 export function songHands(song: Song): HandSelection[] {
-  return song.left ? ['R', 'L', 'both'] : ['R']
+  return song.left ? [HandSelection.Right, HandSelection.Left, HandSelection.Both] : [HandSelection.Right]
 }
 
 /**
@@ -20,7 +20,7 @@ export function songHands(song: Song): HandSelection[] {
 export class SongMode implements Mode {
   constructor(
     private readonly song: Song,
-    private readonly selection: HandSelection = 'R',
+    private readonly selection: HandSelection = HandSelection.Right,
   ) {}
 
   buildChart(): Chart {
@@ -28,16 +28,16 @@ export class SongMode implements Mode {
     const targets: Target[] = []
     let id = 0
 
-    if (this.selection === 'R' || this.selection === 'both') {
+    if (this.selection === HandSelection.Right || this.selection === HandSelection.Both) {
       let beat = 0
       for (const n of this.song.right) {
-        targets.push({ id: `r${id++}`, midi: n.midi, startMs: beat * beatMs, durMs: n.dur * beatMs, hand: 'R' })
+        targets.push({ id: `r${id++}`, midi: n.midi, startMs: beat * beatMs, durMs: n.dur * beatMs, hand: Hand.Right })
         beat += n.dur
       }
     }
-    if ((this.selection === 'L' || this.selection === 'both') && this.song.left) {
+    if ((this.selection === HandSelection.Left || this.selection === HandSelection.Both) && this.song.left) {
       for (const n of this.song.left) {
-        targets.push({ id: `l${id++}`, midi: n.midi, startMs: n.startBeat * beatMs, durMs: n.dur * beatMs, hand: 'L' })
+        targets.push({ id: `l${id++}`, midi: n.midi, startMs: n.startBeat * beatMs, durMs: n.dur * beatMs, hand: Hand.Left })
       }
     }
 

@@ -1,5 +1,6 @@
 import { Midi } from '@tonejs/midi'
-import type { Chart, Target, Hand } from '../engine/chart'
+import { Hand, type Chart, type Target } from '../engine/chart'
+import { HandSelection } from '../modes/song-mode'
 import type { Mode, Verdict } from '../modes/mode'
 import type { Summary } from '../engine/scoring'
 
@@ -83,9 +84,9 @@ export function parseMidi(data: ArrayBuffer, fallbackTitle: string): ImportedSon
       const avgs = noteTracks.map(notes => notes.reduce((a, n) => a + n.midi, 0) / notes.length)
       let rightTrack = 0
       for (let i = 1; i < avgs.length; i++) if (avgs[i] > avgs[rightTrack]) rightTrack = i
-      return (track: number): Hand => (track === rightTrack ? 'R' : 'L')
+      return (track: number): Hand => (track === rightTrack ? Hand.Right : Hand.Left)
     }
-    return (_track: number, m: number): Hand => (m >= 60 ? 'R' : 'L')
+    return (_track: number, m: number): Hand => (m >= 60 ? Hand.Right : Hand.Left)
   })()
 
   // Flatten to targets (clamped + floored), keeping the source hand.
@@ -113,7 +114,7 @@ export function parseMidi(data: ArrayBuffer, fallbackTitle: string): ImportedSon
   built.sort((a, b) => a.target.startMs - b.target.startMs)
   const capped = built.slice(0, MAX_TARGETS)
   const targets = capped.map(b => b.target)
-  const hasLeft = capped.some(b => b.hand === 'L')
+  const hasLeft = capped.some(b => b.hand === Hand.Left)
 
   const bpm = midi.header.tempos[0]?.bpm ?? 100
 
@@ -124,9 +125,10 @@ export function parseMidi(data: ArrayBuffer, fallbackTitle: string): ImportedSon
 }
 
 /** Filter a chart down to a single hand, or pass it through unchanged. */
-export function filterChartByHand(chart: Chart, sel: 'R' | 'L' | 'both'): Chart {
-  if (sel === 'both') return chart
-  return { bpm: chart.bpm, targets: chart.targets.filter(t => t.hand === sel) }
+export function filterChartByHand(chart: Chart, sel: HandSelection): Chart {
+  if (sel === HandSelection.Both) return chart
+  const hand = sel === HandSelection.Right ? Hand.Right : Hand.Left
+  return { bpm: chart.bpm, targets: chart.targets.filter(t => t.hand === hand) }
 }
 
 /** Wrap a prebuilt chart as a `Mode` so it can run through `runChartWaiting`. */

@@ -1,11 +1,12 @@
 import { describe, it, expect } from 'vitest'
 import { ScaleMode, MAJOR_STEPS, SCALES } from '../src/modes/scale-mode'
+import { Hand } from '../src/engine/chart'
 
 describe('scale mode', () => {
   it('builds an ascending C major scale chart', () => {
     const chart = new ScaleMode({ id: 'x', title: 'X', rootMidi: 60, steps: MAJOR_STEPS, bpm: 60, passAccuracy: 0.9 }).buildChart()
     expect(chart.targets.map(t => t.midi)).toEqual([60, 62, 64, 65, 67, 69, 71, 72])
-    expect(chart.targets.every(t => t.hand === 'R')).toBe(true)
+    expect(chart.targets.every(t => t.hand === Hand.Right)).toBe(true)
     // one beat apart at 60bpm = 1000ms
     expect(chart.targets[1].startMs - chart.targets[0].startMs).toBe(1000)
   })

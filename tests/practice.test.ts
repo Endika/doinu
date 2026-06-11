@@ -1,7 +1,8 @@
 import { describe, it, expect } from 'vitest'
 import { ManualClock, PausableClock } from '../src/core/clock'
 import { Matcher } from '../src/engine/matcher'
-import type { Chart } from '../src/engine/chart'
+import { Hand, type Chart } from '../src/engine/chart'
+import { InputEventType } from '../src/core/events'
 
 describe('PausableClock — practice/wait mode', () => {
   it('advances while running and freezes while paused', () => {
@@ -32,14 +33,14 @@ describe('Matcher.pending — what wait mode is waiting on', () => {
   const chart: Chart = {
     bpm: 60,
     targets: [
-      { id: 'a', midi: 60, startMs: 0, durMs: 500, hand: 'R' },
-      { id: 'b', midi: 62, startMs: 500, durMs: 500, hand: 'R' },
+      { id: 'a', midi: 60, startMs: 0, durMs: 500, hand: Hand.Right },
+      { id: 'b', midi: 62, startMs: 500, durMs: 500, hand: Hand.Right },
     ],
   }
   it('lists unplayed targets and drops them once hit', () => {
     const m = new Matcher(chart, { windowMs: 150 })
     expect(m.pending().map(t => t.id)).toEqual(['a', 'b'])
-    m.handle({ note: 60, type: 'on', time: 0 })
+    m.handle({ note: 60, type: InputEventType.On, time: 0 })
     expect(m.pending().map(t => t.id)).toEqual(['b'])
   })
 })

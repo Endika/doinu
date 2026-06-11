@@ -12,7 +12,7 @@
 
 import type { MelodyNote, HandNote } from './songs'
 
-export type LessonKind = 'melody' | 'notefind' | 'chord' | 'twohands' | 'reading'
+export enum LessonKind { Melody = 'melody', NoteFind = 'notefind', Chord = 'chord', TwoHands = 'twohands', Reading = 'reading' }
 
 export interface PathLesson {
   id: string
@@ -54,10 +54,10 @@ export const PATH: PathUnit[] = [
     title: '🎵 The notes',
     concept: 'White keys, one at a time',
     lessons: [
-      { id: 'u1-doremi', title: 'Do Re Mi', concept: 'Your first three notes', kind: 'melody', milestone: 1, bpm: 60, passAccuracy: 0.7, notes: [C, D, E] },
-      { id: 'u1-hand', title: 'The whole hand', concept: 'Five notes: Do to Sol', kind: 'melody', milestone: 1, bpm: 70, passAccuracy: 0.7, notes: [C, D, E, F, G] },
-      { id: 'u1-octave', title: 'Up to high Do', concept: 'The full octave', kind: 'melody', milestone: 1, bpm: 72, passAccuracy: 0.75, notes: [C, D, E, F, G, A, B, C5] },
-      { id: 'u1-tune', title: 'A little tune', concept: 'Jumping between notes', kind: 'melody', milestone: 1, bpm: 80, passAccuracy: 0.75, notes: [C, E, G, E, C, G, C5] },
+      { id: 'u1-doremi', title: 'Do Re Mi', concept: 'Your first three notes', kind: LessonKind.Melody, milestone: 1, bpm: 60, passAccuracy: 0.7, notes: [C, D, E] },
+      { id: 'u1-hand', title: 'The whole hand', concept: 'Five notes: Do to Sol', kind: LessonKind.Melody, milestone: 1, bpm: 70, passAccuracy: 0.7, notes: [C, D, E, F, G] },
+      { id: 'u1-octave', title: 'Up to high Do', concept: 'The full octave', kind: LessonKind.Melody, milestone: 1, bpm: 72, passAccuracy: 0.75, notes: [C, D, E, F, G, A, B, C5] },
+      { id: 'u1-tune', title: 'A little tune', concept: 'Jumping between notes', kind: LessonKind.Melody, milestone: 1, bpm: 80, passAccuracy: 0.75, notes: [C, E, G, E, C, G, C5] },
     ],
   },
   {
@@ -65,9 +65,9 @@ export const PATH: PathUnit[] = [
     title: '🎹 Black keys',
     concept: 'New sounds between the white keys',
     lessons: [
-      { id: 'u2-fsharp', title: 'Meet Fa#', concept: 'Your first black key', kind: 'melody', milestone: 1, bpm: 70, passAccuracy: 0.7, notes: [E, Fs, G, Fs, E] },
-      { id: 'u2-bflat', title: 'Meet Sib', concept: 'Another black key', kind: 'melody', milestone: 1, bpm: 70, passAccuracy: 0.7, notes: [A, Bb, A, G, A] },
-      { id: 'u2-blacks', title: 'Black-key walk', concept: 'Several black keys', kind: 'melody', milestone: 1, bpm: 66, passAccuracy: 0.7, notes: [Fs, Gs, Bb, Gs, Fs] },
+      { id: 'u2-fsharp', title: 'Meet Fa#', concept: 'Your first black key', kind: LessonKind.Melody, milestone: 1, bpm: 70, passAccuracy: 0.7, notes: [E, Fs, G, Fs, E] },
+      { id: 'u2-bflat', title: 'Meet Sib', concept: 'Another black key', kind: LessonKind.Melody, milestone: 1, bpm: 70, passAccuracy: 0.7, notes: [A, Bb, A, G, A] },
+      { id: 'u2-blacks', title: 'Black-key walk', concept: 'Several black keys', kind: LessonKind.Melody, milestone: 1, bpm: 66, passAccuracy: 0.7, notes: [Fs, Gs, Bb, Gs, Fs] },
     ],
   },
   {
@@ -75,11 +75,11 @@ export const PATH: PathUnit[] = [
     title: '🤝 Playing together',
     concept: 'More than one note at once',
     lessons: [
-      { id: 'u3-two', title: 'Two notes together', concept: 'Do and Mi at the same time', kind: 'chord', milestone: 1, bpm: 50, passAccuracy: 0.6, chords: [[C, E], [C, E], [C, E]] },
-      { id: 'u3-triad-c', title: 'Your first chord', concept: 'The C major chord', kind: 'chord', milestone: 1, bpm: 45, passAccuracy: 0.6, chords: [[C, E, G], [C, E, G], [C, E, G]] },
-      { id: 'u3-triad-f', title: 'The F chord', concept: 'A new chord shape', kind: 'chord', milestone: 1, bpm: 45, passAccuracy: 0.6, chords: [[F, A, C5], [F, A, C5]] },
-      { id: 'u3-triad-g', title: 'The G chord', concept: 'A new chord shape', kind: 'chord', milestone: 1, bpm: 45, passAccuracy: 0.6, chords: [[G, B, D5], [G, B, D5]] },
-      { id: 'u3-changes', title: 'Change chords', concept: 'Move between chords', kind: 'chord', milestone: 1, bpm: 40, passAccuracy: 0.6, chords: [[C, E, G], [F, A, C5], [G, B, D5], [C, E, G]] },
+      { id: 'u3-two', title: 'Two notes together', concept: 'Do and Mi at the same time', kind: LessonKind.Chord, milestone: 1, bpm: 50, passAccuracy: 0.6, chords: [[C, E], [C, E], [C, E]] },
+      { id: 'u3-triad-c', title: 'Your first chord', concept: 'The C major chord', kind: LessonKind.Chord, milestone: 1, bpm: 45, passAccuracy: 0.6, chords: [[C, E, G], [C, E, G], [C, E, G]] },
+      { id: 'u3-triad-f', title: 'The F chord', concept: 'A new chord shape', kind: LessonKind.Chord, milestone: 1, bpm: 45, passAccuracy: 0.6, chords: [[F, A, C5], [F, A, C5]] },
+      { id: 'u3-triad-g', title: 'The G chord', concept: 'A new chord shape', kind: LessonKind.Chord, milestone: 1, bpm: 45, passAccuracy: 0.6, chords: [[G, B, D5], [G, B, D5]] },
+      { id: 'u3-changes', title: 'Change chords', concept: 'Move between chords', kind: LessonKind.Chord, milestone: 1, bpm: 40, passAccuracy: 0.6, chords: [[C, E, G], [F, A, C5], [G, B, D5], [C, E, G]] },
     ],
   },
   {
@@ -88,7 +88,7 @@ export const PATH: PathUnit[] = [
     concept: 'The left hand joins in',
     lessons: [
       {
-        id: 'u4-lh', title: 'The left hand', concept: 'Playing low notes', kind: 'twohands',
+        id: 'u4-lh', title: 'The left hand', concept: 'Playing low notes', kind: LessonKind.TwoHands,
         milestone: 1, bpm: 70, passAccuracy: 0.65,
         right: [],
         left: [
@@ -98,13 +98,13 @@ export const PATH: PathUnit[] = [
         ],
       },
       {
-        id: 'u4-both', title: 'Melody + bass', concept: 'Both hands together', kind: 'twohands',
+        id: 'u4-both', title: 'Melody + bass', concept: 'Both hands together', kind: LessonKind.TwoHands,
         milestone: 1, bpm: 60, passAccuracy: 0.65,
         right: [{ midi: C, dur: 1 }, { midi: D, dur: 1 }, { midi: E, dur: 1 }, { midi: F, dur: 1 }, { midi: G, dur: 2 }],
         left: [{ midi: C3, startBeat: 0, dur: 2 }, { midi: F3, startBeat: 2, dur: 2 }, { midi: G3, startBeat: 4, dur: 2 }],
       },
       {
-        id: 'u4-song', title: 'A two-hand song', concept: 'A whole song, both hands', kind: 'twohands',
+        id: 'u4-song', title: 'A two-hand song', concept: 'A whole song, both hands', kind: LessonKind.TwoHands,
         milestone: 1, bpm: 72, passAccuracy: 0.65,
         right: [
           { midi: C, dur: 1 }, { midi: C, dur: 1 }, { midi: G, dur: 1 }, { midi: G, dur: 1 },
@@ -122,8 +122,8 @@ export const PATH: PathUnit[] = [
     title: '🗝️ More keys',
     concept: 'New home notes',
     lessons: [
-      { id: 'u5-gmajor', title: 'G major', concept: 'A scale with one sharp', kind: 'melody', milestone: 3, bpm: 72, passAccuracy: 0.75, notes: [G, A, B, C5, D5, 76, 78, 79] },
-      { id: 'u5-fmajor', title: 'F major', concept: 'A scale with one flat', kind: 'melody', milestone: 3, bpm: 72, passAccuracy: 0.75, notes: [F, G, A, Bb, C5, D5, 76, 77] },
+      { id: 'u5-gmajor', title: 'G major', concept: 'A scale with one sharp', kind: LessonKind.Melody, milestone: 3, bpm: 72, passAccuracy: 0.75, notes: [G, A, B, C5, D5, 76, 78, 79] },
+      { id: 'u5-fmajor', title: 'F major', concept: 'A scale with one flat', kind: LessonKind.Melody, milestone: 3, bpm: 72, passAccuracy: 0.75, notes: [F, G, A, Bb, C5, D5, 76, 77] },
     ],
   },
   {
@@ -131,9 +131,9 @@ export const PATH: PathUnit[] = [
     title: '📖 Reading music',
     concept: 'Notes on the staff, no colors',
     lessons: [
-      { id: 'u6-staff', title: 'The staff', concept: 'Where notes live', kind: 'reading', milestone: 3, bpm: 60, passAccuracy: 0.7 },
-      { id: 'u6-read-note', title: 'Read a note', concept: 'Name what you see', kind: 'reading', milestone: 3, bpm: 60, passAccuracy: 0.7 },
-      { id: 'u6-read-melody', title: 'Read a melody', concept: 'Play without colors', kind: 'reading', milestone: 3, bpm: 60, passAccuracy: 0.7 },
+      { id: 'u6-staff', title: 'The staff', concept: 'Where notes live', kind: LessonKind.Reading, milestone: 3, bpm: 60, passAccuracy: 0.7 },
+      { id: 'u6-read-note', title: 'Read a note', concept: 'Name what you see', kind: LessonKind.Reading, milestone: 3, bpm: 60, passAccuracy: 0.7 },
+      { id: 'u6-read-melody', title: 'Read a melody', concept: 'Play without colors', kind: LessonKind.Reading, milestone: 3, bpm: 60, passAccuracy: 0.7 },
     ],
   },
 ]

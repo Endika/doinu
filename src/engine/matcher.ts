@@ -1,10 +1,11 @@
-import type { InputEvent } from '../core/events'
+import { InputEventType, type InputEvent } from '../core/events'
 import type { Chart, Target } from './chart'
 
-type Status = 'pending' | 'hit' | 'missed'
+enum Status { Pending = 'pending', Hit = 'hit', Missed = 'missed' }
+export enum MatchOutcome { Hit = 'hit', Wrong = 'wrong', Ignored = 'ignored' }
 
 export interface MatcherOptions { windowMs: number }
-export interface MatchResult { result: 'hit' | 'wrong' | 'ignored'; target?: Target; timingDevMs?: number }
+export interface MatchResult { result: MatchOutcome; target?: Target; timingDevMs?: number }
 
 export class Matcher {
   private readonly windowMs: number
@@ -14,17 +15,17 @@ export class Matcher {
   constructor(chart: Chart, opts: MatcherOptions) {
     this.windowMs = opts.windowMs
     this.targets = [...chart.targets]
-    this.status = new Map(this.targets.map(t => [t.id, 'pending']))
+    this.status = new Map(this.targets.map(t => [t.id, Status.Pending]))
   }
 
   handle(e: InputEvent): MatchResult {
     // Note-off events are not scored; they never count as wrong notes.
-    if (e.type !== 'on') return { result: 'ignored' }
+    if (e.type !== InputEventType.On) return { result: MatchOutcome.Ignored }
 
     let best: Target | undefined
     let bestDev = Number.POSITIVE_INFINITY
     for (const t of this.targets) {
-      if (this.status.get(t.id) !== 'pending') continue
+      if (this.status.get(t.id) !== Status.Pending) continue
       if (t.midi !== e.note) continue
       if (e.time < t.startMs - this.windowMs || e.time > t.startMs + this.windowMs) continue
       const dev = Math.abs(e.time - t.startMs)
@@ -35,27 +36,27 @@ export class Matcher {
     }
 
     if (best) {
-      this.status.set(best.id, 'hit')
-      return { result: 'hit', target: best, timingDevMs: e.time - best.startMs }
+      this.status.set(best.id, Status.Hit)
+      return { result: MatchOutcome.Hit, target: best, timingDevMs: e.time - best.startMs }
     }
-    return { result: 'wrong' }
+    return { result: MatchOutcome.Wrong }
   }
 
   advanceTo(nowMs: number): void {
     for (const t of this.targets) {
-      if (this.status.get(t.id) !== 'pending') continue
+      if (this.status.get(t.id) !== Status.Pending) continue
       if (nowMs > t.startMs + this.windowMs) {
-        this.status.set(t.id, 'missed')
+        this.status.set(t.id, Status.Missed)
       }
     }
   }
 
   missed(): Target[] {
-    return this.targets.filter(t => this.status.get(t.id) === 'missed')
+    return this.targets.filter(t => this.status.get(t.id) === Status.Missed)
   }
 
   /** Targets not yet hit and not yet missed — what practice/wait mode waits on. */
   pending(): Target[] {
-    return this.targets.filter(t => this.status.get(t.id) === 'pending')
+    return this.targets.filter(t => this.status.get(t.id) === Status.Pending)
   }
 }

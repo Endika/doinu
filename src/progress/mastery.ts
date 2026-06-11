@@ -1,7 +1,7 @@
 import type { Session } from './metrics-store'
 import type { Exercise } from '../content/curriculum'
 
-export type MasteryState = 'locked' | 'inProgress' | 'mastered'
+export enum MasteryState { Locked = 'locked', InProgress = 'inProgress', Mastered = 'mastered' }
 export const DEFAULT_FIND_THRESHOLD_MS = 2000
 export const MASTERY_WINDOW = 3 // consecutive recent sessions required
 
@@ -31,14 +31,14 @@ export function buildMasteryMap(
   let unlocked = true // the first exercise is always unlocked
   return exercises.map((exercise) => {
     if (!unlocked) {
-      return { exerciseId: exercise.id, state: 'locked' }
+      return { exerciseId: exercise.id, state: MasteryState.Locked }
     }
     if (isMastered(sessionsFor(exercise.id), exercise.passAccuracy, findThresholdMs)) {
       // next exercise stays unlocked
-      return { exerciseId: exercise.id, state: 'mastered' }
+      return { exerciseId: exercise.id, state: MasteryState.Mastered }
     }
     // non-mastered unlocked exercise: gate everything after it
     unlocked = false
-    return { exerciseId: exercise.id, state: 'inProgress' }
+    return { exerciseId: exercise.id, state: MasteryState.InProgress }
   })
 }

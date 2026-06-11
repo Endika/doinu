@@ -2,7 +2,7 @@ import { describe, it, expect } from 'vitest'
 import { buildProgressReport } from '../src/progress/progress-view'
 import type { Session } from '../src/progress/metrics-store'
 import type { Exercise } from '../src/content/curriculum'
-import type { MasteryState } from '../src/progress/mastery'
+import { MasteryState } from '../src/progress/mastery'
 
 const ex: Exercise[] = [
   { id: 'a', title: 'A', bpm: 60, notes: [60], passAccuracy: 0.9 },
@@ -17,7 +17,7 @@ describe('buildProgressReport', () => {
     a: [ses(0.7, 1500, 60, 1), ses(0.95, 900, 70, 2), ses(0.9, 800, 80, 3)],
     b: [],
   }
-  const states: Record<string, MasteryState> = { a: 'mastered', b: 'inProgress' }
+  const states: Record<string, MasteryState> = { a: MasteryState.Mastered, b: MasteryState.InProgress }
   const report = buildProgressReport(ex, id => sessions[id] ?? [], id => states[id])
 
   it('summarizes measured metrics per exercise', () => {
@@ -28,13 +28,13 @@ describe('buildProgressReport', () => {
     expect(a.bestTempoBpm).toBe(80)
     expect(a.firstFindMs).toBe(1500)
     expect(a.latestFindMs).toBe(800)  // find-time dropped → improvement
-    expect(a.state).toBe('mastered')
+    expect(a.state).toBe(MasteryState.Mastered)
   })
   it('handles an exercise with no sessions (all zeros, state preserved)', () => {
     const b = report[1]
     expect(b.sessions).toBe(0)
     expect(b.bestAccuracy).toBe(0)
     expect(b.firstFindMs).toBe(0)
-    expect(b.state).toBe('inProgress')
+    expect(b.state).toBe(MasteryState.InProgress)
   })
 })
