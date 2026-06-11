@@ -423,6 +423,9 @@
         gap: 0.6rem;
       }
       .menu-btn[data-activity='compose'] { background: #ff5d8f; }
+      .hidden { display: none; }
+      #mic-enable { background: #e0356b; }
+      #input-toggle { background: #6d5dfc; font-size: 0.98rem; padding: 0.7rem 1rem; }
       #compose-stop {
         position: fixed;
         left: 50%;
@@ -596,6 +599,8 @@
           <button class="menu-btn" type="button" data-activity="c-major-updown" data-i18n="act.scaleupdown">🎢 Scale up &amp; down</button>
           <button class="menu-btn" type="button" data-activity="free" data-i18n="act.free">✨ Free play</button>
         </div>
+        <button id="mic-enable" class="menu-btn hidden" type="button" data-i18n="input.micEnable">🎤 Enable microphone</button>
+        <button id="input-toggle" class="menu-btn hidden" type="button">🎤 Use microphone</button>
       </div>
       <div id="menu-status" class="menu-status"></div>
       <p id="version" class="menu-version"></p>

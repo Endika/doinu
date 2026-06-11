@@ -1,6 +1,12 @@
 import type { Session } from './metrics-store'
 import { isMastered } from './mastery'
-import type { PathLesson } from '../content/path'
+import { LessonKind, type PathLesson } from '../content/path'
+
+/** True if a lesson needs more than one note at once (chords, two hands) — so a
+ * monophonic input (the mic) cannot play it. */
+export function lessonNeedsPolyphony(lesson: PathLesson): boolean {
+  return lesson.kind === LessonKind.Chord || lesson.kind === LessonKind.TwoHands
+}
 
 /**
  * Per-lesson state on the learning path:

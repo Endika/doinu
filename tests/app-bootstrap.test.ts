@@ -6,10 +6,15 @@ describe('adapter selection', () => {
   it('uses midi when web midi is available', () => {
     expect(selectAdapter({ hasWebMidi: true }).capabilities.source).toBe(InputSource.Midi)
   })
-  it('falls back to a null adapter with a clear status when no midi', () => {
+  it('falls back to the microphone (monophonic) when no midi', () => {
     const a = selectAdapter({ hasWebMidi: false })
-    expect(a.capabilities.source).toBe(InputSource.Fake)   // null/idle adapter
-    expect(a.statusKey).toBe('input.noMidiMicLater')
+    expect(a.capabilities.source).toBe(InputSource.Mic)
+    expect(a.capabilities.polyphonic).toBe(false)
+  })
+  it('honours a stored preference: mic even with midi, midi when available', () => {
+    expect(selectAdapter({ hasWebMidi: true }, 'mic').capabilities.source).toBe(InputSource.Mic)
+    expect(selectAdapter({ hasWebMidi: true }, 'midi').capabilities.source).toBe(InputSource.Midi)
+    expect(selectAdapter({ hasWebMidi: false }, 'midi').capabilities.source).toBe(InputSource.Mic)
   })
 })
 
