@@ -1,5 +1,12 @@
 # Changelog
 
+## [0.8.0](https://github.com/Endika/doinu/compare/v0.7.1...v0.8.0) (2026-06-11)
+
+
+### Features
+
+* **content:** add Row Your Boat, Au Clair de la Lune, Lightly Row ([d756569](https://github.com/Endika/doinu/commit/d756569fad6a77517e5e5fe4b835ec01e9d4bab6))
+
 ## [0.7.1](https://github.com/Endika/doinu/compare/v0.7.0...v0.7.1) (2026-06-11)
 
 
