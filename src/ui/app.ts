@@ -7,6 +7,7 @@ import type { Summary } from '../engine/scoring'
 import { Renderer, leadInMs, expectedNotesAt } from '../render/renderer'
 import { Keyboard } from '../render/keyboard'
 import { MelodyMode } from '../modes/melody-mode'
+import { ChordMode } from '../modes/chord-mode'
 import { ScaleMode, SCALES } from '../modes/scale-mode'
 import { SequenceMatcher, ECHO_PHRASES } from '../modes/echo-mode'
 import { MemoryGame, MEMORY_NOTES } from '../modes/memory-mode'
@@ -27,6 +28,8 @@ import {
 import { MetricsStore } from '../progress/metrics-store'
 import { buildMasteryMap, type MasteryEntry, type MasteryState } from '../progress/mastery'
 import { buildProgressReport, renderProgressReport } from '../progress/progress-view'
+import { PATH, PATH_LESSONS, type PathLesson } from '../content/path'
+import { buildPathProgress, type PathLessonState } from '../progress/path-progress'
 import { resolveLocale, createI18n, type Locale, type MessageKey } from '../i18n'
 
 /**
@@ -1251,6 +1254,112 @@ export function bootstrap(): void {
     showMenu()
   })
 
+  // Learning path ("El idioma del piano"): a Duolingo-style journey. The whole
+  // six-unit ladder is shown; gating is light (one pass unlocks the next) and ⭐
+  // marks full mastery. Built lessons (milestone 1, melody/chord) play in wait
+  // mode; later units render as "soon". Sessions are namespaced `path:<id>`.
+  const pathOverlay = document.getElementById('path')
+  const pathList = document.getElementById('path-list')
+  const pathBack = document.getElementById('path-back')
+
+  const lessonMode = (lesson: PathLesson): Mode =>
+    lesson.kind === 'chord'
+      ? new ChordMode({ id: lesson.id, title: lesson.title, bpm: lesson.bpm, chords: lesson.chords ?? [], passAccuracy: lesson.passAccuracy })
+      : new MelodyMode({ id: lesson.id, title: lesson.title, bpm: lesson.bpm, notes: lesson.notes ?? [], passAccuracy: lesson.passAccuracy })
+
+  const PATH_ICON: Record<PathLessonState, string> = {
+    current: '▶', passed: '✓', mastered: '⭐', locked: '🔒', soon: '🔒',
+  }
+
+  const showPath = (): void => {
+    if (status) status.textContent = ''
+    renderPath()
+    pathOverlay?.classList.remove('hidden')
+  }
+  const hidePath = (): void => pathOverlay?.classList.add('hidden')
+
+  // Play one path lesson in wait mode; on completion record it under path:<id>,
+  // then return to the (re-rendered) path map so unlocks show immediately.
+  const startLesson = (lesson: PathLesson): void => {
+    synth.resume()
+    hidePath()
+    let alive = true
+    let stopRun: (() => void) | null = null
+    let timer = 0
+    const exit = (): void => {
+      if (!alive) return
+      alive = false
+      stopRun?.()
+      window.clearTimeout(timer)
+      backBtn?.removeEventListener('click', exit)
+      backBtn?.classList.add('hidden')
+      if (status) status.textContent = ''
+      showPath()
+    }
+    backBtn?.addEventListener('click', exit)
+    backBtn?.classList.remove('hidden')
+
+    stopRun = runChartWaiting(lessonMode(lesson), lesson.title, deps, engine => {
+      if (!alive) return
+      store.record({ exerciseId: `path:${lesson.id}`, timestamp: Date.now(), summary: engine.summary() })
+      refreshReport()
+      if (status) status.textContent = formatSummary(engine.summary())
+      timer = window.setTimeout(() => exit(), 2800)
+    })
+  }
+
+  function renderPath(): void {
+    if (!pathList) return
+    const progress = buildPathProgress(PATH_LESSONS, id => store.sessionsFor(`path:${id}`))
+    const stateOf = (id: string): PathLessonState =>
+      progress.find(p => p.id === id)?.state ?? 'locked'
+
+    pathList.replaceChildren()
+    for (const unit of PATH) {
+      const block = document.createElement('div')
+      block.className = 'path-unit'
+      const heading = document.createElement('div')
+      heading.className = 'path-unit-title'
+      heading.textContent = unit.title
+      block.appendChild(heading)
+
+      for (const lesson of unit.lessons) {
+        const st = stateOf(lesson.id)
+        const launchable = st === 'current' || st === 'passed' || st === 'mastered'
+        const node = document.createElement('button')
+        node.type = 'button'
+        node.className = `path-node path-node--${st}`
+        node.disabled = !launchable
+
+        const icon = document.createElement('span')
+        icon.className = 'path-node-icon'
+        icon.textContent = PATH_ICON[st]
+        node.appendChild(icon)
+
+        const text = document.createElement('span')
+        text.className = 'path-node-text'
+        const title = document.createElement('span')
+        title.className = 'path-node-title'
+        title.textContent = lesson.title
+        const concept = document.createElement('span')
+        concept.className = 'path-node-concept'
+        concept.textContent = st === 'soon' ? t('path.soon') : lesson.concept
+        text.appendChild(title)
+        text.appendChild(concept)
+        node.appendChild(text)
+
+        if (launchable) node.addEventListener('click', () => startLesson(lesson))
+        block.appendChild(node)
+      }
+      pathList.appendChild(block)
+    }
+  }
+
+  pathBack?.addEventListener('click', () => {
+    hidePath()
+    showMenu()
+  })
+
   // MIDI import: load a .mid from the device, parse it locally (no network),
   // split into hands and play it in practice (wait) mode. Defaults to BOTH hands
   // so the learner hears the whole song. The in-game ← Menu returns to the main
@@ -1336,7 +1445,8 @@ export function bootstrap(): void {
       synth.resume()
       hideMenu()
       const activity = btn.dataset.activity
-      if (activity === 'melody') resumeMelody()
+      if (activity === 'path') showPath()
+      else if (activity === 'melody') resumeMelody()
       else if (activity === 'songs') showSongs()
       else if (activity === 'import') startImport()
       else if (activity === 'progress') openProgress()
