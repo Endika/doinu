@@ -10,6 +10,8 @@
 // Pitch reference: middle C = 60. C major unless the lesson is about a black key
 // or another key. Lesson/unit titles are plain strings (same as the song library).
 
+import type { MelodyNote, HandNote } from './songs'
+
 export type LessonKind = 'melody' | 'notefind' | 'chord' | 'twohands' | 'reading'
 
 export interface PathLesson {
@@ -18,7 +20,7 @@ export interface PathLesson {
   /** Kid-facing "new word" this lesson teaches. */
   concept: string
   kind: LessonKind
-  /** 1 = playable now; 2/3 = visible but not yet built ("soon"). */
+  /** 1 = playable now; higher = visible but not yet built ("soon"). */
   milestone: 1 | 2 | 3
   bpm: number
   passAccuracy: number
@@ -26,6 +28,9 @@ export interface PathLesson {
   notes?: number[]
   /** Chord lessons: each inner array is one chord played together. */
   chords?: number[][]
+  /** Two-hand lessons: a right-hand melody (sequential) and a left hand (explicit timing). */
+  right?: MelodyNote[]
+  left?: HandNote[]
 }
 
 export interface PathUnit {
@@ -40,6 +45,8 @@ const C = 60, D = 62, E = 64, F = 65, G = 67, A = 69, B = 71, C5 = 72, D5 = 74
 const Fs = 66 // F#
 const Gs = 68 // G#
 const Bb = 70 // Bb
+// Left-hand (low) notes for the two-hand unit.
+const C3 = 48, D3 = 50, E3 = 52, F3 = 53, G3 = 55
 
 export const PATH: PathUnit[] = [
   {
@@ -70,9 +77,9 @@ export const PATH: PathUnit[] = [
     lessons: [
       { id: 'u3-two', title: 'Two notes together', concept: 'Do and Mi at the same time', kind: 'chord', milestone: 1, bpm: 50, passAccuracy: 0.6, chords: [[C, E], [C, E], [C, E]] },
       { id: 'u3-triad-c', title: 'Your first chord', concept: 'The C major chord', kind: 'chord', milestone: 1, bpm: 45, passAccuracy: 0.6, chords: [[C, E, G], [C, E, G], [C, E, G]] },
-      { id: 'u3-triad-f', title: 'The F chord', concept: 'A new chord shape', kind: 'chord', milestone: 2, bpm: 45, passAccuracy: 0.6, chords: [[F, A, C5], [F, A, C5]] },
-      { id: 'u3-triad-g', title: 'The G chord', concept: 'A new chord shape', kind: 'chord', milestone: 2, bpm: 45, passAccuracy: 0.6, chords: [[G, B, D5], [G, B, D5]] },
-      { id: 'u3-changes', title: 'Change chords', concept: 'Move between chords', kind: 'chord', milestone: 2, bpm: 40, passAccuracy: 0.6, chords: [[C, E, G], [F, A, C5], [G, B, D5], [C, E, G]] },
+      { id: 'u3-triad-f', title: 'The F chord', concept: 'A new chord shape', kind: 'chord', milestone: 1, bpm: 45, passAccuracy: 0.6, chords: [[F, A, C5], [F, A, C5]] },
+      { id: 'u3-triad-g', title: 'The G chord', concept: 'A new chord shape', kind: 'chord', milestone: 1, bpm: 45, passAccuracy: 0.6, chords: [[G, B, D5], [G, B, D5]] },
+      { id: 'u3-changes', title: 'Change chords', concept: 'Move between chords', kind: 'chord', milestone: 1, bpm: 40, passAccuracy: 0.6, chords: [[C, E, G], [F, A, C5], [G, B, D5], [C, E, G]] },
     ],
   },
   {
@@ -80,9 +87,34 @@ export const PATH: PathUnit[] = [
     title: '🙌 Two hands',
     concept: 'The left hand joins in',
     lessons: [
-      { id: 'u4-lh', title: 'The left hand', concept: 'Playing low notes', kind: 'twohands', milestone: 2, bpm: 70, passAccuracy: 0.7 },
-      { id: 'u4-both', title: 'Melody + bass', concept: 'Both hands together', kind: 'twohands', milestone: 2, bpm: 70, passAccuracy: 0.7 },
-      { id: 'u4-song', title: 'A two-hand song', concept: 'A whole song, both hands', kind: 'twohands', milestone: 2, bpm: 80, passAccuracy: 0.7 },
+      {
+        id: 'u4-lh', title: 'The left hand', concept: 'Playing low notes', kind: 'twohands',
+        milestone: 1, bpm: 70, passAccuracy: 0.65,
+        right: [],
+        left: [
+          { midi: C3, startBeat: 0, dur: 1 }, { midi: D3, startBeat: 1, dur: 1 },
+          { midi: E3, startBeat: 2, dur: 1 }, { midi: F3, startBeat: 3, dur: 1 },
+          { midi: G3, startBeat: 4, dur: 1 },
+        ],
+      },
+      {
+        id: 'u4-both', title: 'Melody + bass', concept: 'Both hands together', kind: 'twohands',
+        milestone: 1, bpm: 60, passAccuracy: 0.65,
+        right: [{ midi: C, dur: 1 }, { midi: D, dur: 1 }, { midi: E, dur: 1 }, { midi: F, dur: 1 }, { midi: G, dur: 2 }],
+        left: [{ midi: C3, startBeat: 0, dur: 2 }, { midi: F3, startBeat: 2, dur: 2 }, { midi: G3, startBeat: 4, dur: 2 }],
+      },
+      {
+        id: 'u4-song', title: 'A two-hand song', concept: 'A whole song, both hands', kind: 'twohands',
+        milestone: 1, bpm: 72, passAccuracy: 0.65,
+        right: [
+          { midi: C, dur: 1 }, { midi: C, dur: 1 }, { midi: G, dur: 1 }, { midi: G, dur: 1 },
+          { midi: A, dur: 1 }, { midi: A, dur: 1 }, { midi: G, dur: 2 },
+        ],
+        left: [
+          { midi: C3, startBeat: 0, dur: 2 }, { midi: F3, startBeat: 2, dur: 2 },
+          { midi: F3, startBeat: 4, dur: 2 }, { midi: C3, startBeat: 6, dur: 2 },
+        ],
+      },
     ],
   },
   {
