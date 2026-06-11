@@ -1,5 +1,12 @@
 # Changelog
 
+## [0.6.0](https://github.com/Endika/doinu/compare/v0.5.2...v0.6.0) (2026-06-11)
+
+
+### Features
+
+* **path:** M3 keys — unlock G major and F major lessons ([c849fc4](https://github.com/Endika/doinu/commit/c849fc453ef18c5def2e0e70a9525f9fdbdbd22c))
+
 ## [0.5.2](https://github.com/Endika/doinu/compare/v0.5.1...v0.5.2) (2026-06-11)
 
 
