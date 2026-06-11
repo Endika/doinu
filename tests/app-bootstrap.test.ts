@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest'
-import { selectAdapter, pickCurrentExerciseId } from '../src/ui/app'
+import { selectAdapter, pickCurrentExerciseId, waitEnabled } from '../src/ui/app'
 import { InputSource } from '../src/core/input-adapter'
 import { MasteryState } from '../src/progress/mastery'
 describe('adapter selection', () => {
@@ -15,6 +15,14 @@ describe('adapter selection', () => {
     expect(selectAdapter({ hasWebMidi: true }, 'mic').capabilities.source).toBe(InputSource.Mic)
     expect(selectAdapter({ hasWebMidi: true }, 'midi').capabilities.source).toBe(InputSource.Midi)
     expect(selectAdapter({ hasWebMidi: false }, 'midi').capabilities.source).toBe(InputSource.Mic)
+  })
+})
+
+describe('waitEnabled', () => {
+  it('defaults to waiting (on) and only "off" disables it', () => {
+    expect(waitEnabled(null)).toBe(true)
+    expect(waitEnabled('on')).toBe(true)
+    expect(waitEnabled('off')).toBe(false)
   })
 })
 
