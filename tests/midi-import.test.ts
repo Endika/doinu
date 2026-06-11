@@ -7,6 +7,8 @@ import {
   MidiImportError,
   MAX_MIDI_BYTES,
 } from '../src/content/midi-import'
+import { Hand } from '../src/engine/chart'
+import { HandSelection } from '../src/modes/song-mode'
 
 function buildTwoHandMidi(): ArrayBuffer {
   const midi = new Midi()
@@ -38,8 +40,8 @@ describe('parseMidi', () => {
   it('splits into right (higher) and left (lower) hands', () => {
     const s = parseMidi(buildTwoHandMidi(), 'song')
     expect(s.hasLeft).toBe(true)
-    expect(s.chart.targets.some(t => t.hand === 'R' && t.midi === 72)).toBe(true)
-    expect(s.chart.targets.some(t => t.hand === 'L' && t.midi === 48)).toBe(true)
+    expect(s.chart.targets.some(t => t.hand === Hand.Right && t.midi === 72)).toBe(true)
+    expect(s.chart.targets.some(t => t.hand === Hand.Left && t.midi === 48)).toBe(true)
     // sorted by start
     const starts = s.chart.targets.map(t => t.startMs)
     expect(starts).toEqual([...starts].sort((a, b) => a - b))
@@ -47,8 +49,8 @@ describe('parseMidi', () => {
 
   it('splits a single track by pitch (>=60 right, <60 left)', () => {
     const s = parseMidi(buildSingleTrackMidi(), 'song')
-    expect(s.chart.targets.find(t => t.midi === 64)?.hand).toBe('R')
-    expect(s.chart.targets.find(t => t.midi === 50)?.hand).toBe('L')
+    expect(s.chart.targets.find(t => t.midi === 64)?.hand).toBe(Hand.Right)
+    expect(s.chart.targets.find(t => t.midi === 50)?.hand).toBe(Hand.Left)
     expect(s.hasLeft).toBe(true)
   })
 
@@ -84,9 +86,9 @@ describe('parseMidi', () => {
 
   it('filterChartByHand keeps only the selected hand', () => {
     const s = parseMidi(buildTwoHandMidi(), 'song')
-    expect(filterChartByHand(s.chart, 'L').targets.every(t => t.hand === 'L')).toBe(true)
-    expect(filterChartByHand(s.chart, 'R').targets.every(t => t.hand === 'R')).toBe(true)
-    expect(filterChartByHand(s.chart, 'both').targets.length).toBe(s.chart.targets.length)
+    expect(filterChartByHand(s.chart, HandSelection.Left).targets.every(t => t.hand === Hand.Left)).toBe(true)
+    expect(filterChartByHand(s.chart, HandSelection.Right).targets.every(t => t.hand === Hand.Right)).toBe(true)
+    expect(filterChartByHand(s.chart, HandSelection.Both).targets.length).toBe(s.chart.targets.length)
   })
 
   it('chartMode wraps a prebuilt chart into a runnable Mode', () => {

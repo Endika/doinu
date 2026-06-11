@@ -6,8 +6,6 @@
 //
 // Pitch reference: middle C = 60. C major unless noted.
 
-export type Hand = 'L' | 'R'
-
 /** A right-hand melody note: pitch + duration in beats (sequential). */
 export interface MelodyNote {
   midi: number

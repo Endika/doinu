@@ -1,10 +1,10 @@
-import type { InputAdapter, Capabilities } from './input-adapter'
-import type { InputEvent } from './events'
+import { InputSource, type InputAdapter, type Capabilities } from './input-adapter'
+import { InputEventType, type InputEvent } from './events'
 
 // Real input path for Fase 1: a physical MIDI keyboard via the Web MIDI API.
 // `requestAccess` is injected so the adapter is testable without a browser.
 export class MidiInputAdapter implements InputAdapter {
-  capabilities: Capabilities = { polyphonic: true, source: 'midi' }
+  capabilities: Capabilities = { polyphonic: true, source: InputSource.Midi }
   private listeners: ((e: InputEvent) => void)[] = []
   private inputs: MIDIInput[] = []
 
@@ -37,9 +37,9 @@ export class MidiInputAdapter implements InputAdapter {
     const velocity = data[2]
     let type: InputEvent['type']
     if (status === 0x90) {
-      type = velocity > 0 ? 'on' : 'off'
+      type = velocity > 0 ? InputEventType.On : InputEventType.Off
     } else if (status === 0x80) {
-      type = 'off'
+      type = InputEventType.Off
     } else {
       return // ignore non-note messages (e.g. control change)
     }

@@ -1,5 +1,5 @@
-import type { InputAdapter, Capabilities } from '../core/input-adapter'
-import type { InputEvent } from '../core/events'
+import { InputSource, type InputAdapter, type Capabilities } from '../core/input-adapter'
+import { InputEventType, type InputEvent } from '../core/events'
 import { MidiInputAdapter } from '../core/midi-adapter'
 import { perfClock, offsetClock, PausableClock, type Clock } from '../core/clock'
 import { Engine } from '../engine/engine'
@@ -10,14 +10,14 @@ import { MelodyMode } from '../modes/melody-mode'
 import { ChordMode } from '../modes/chord-mode'
 import { ScaleMode, SCALES } from '../modes/scale-mode'
 import { SequenceMatcher, ECHO_PHRASES } from '../modes/echo-mode'
-import { MemoryGame, MEMORY_NOTES } from '../modes/memory-mode'
-import { NoteFindGame, NOTE_FIND_NOTES } from '../modes/note-find-mode'
+import { MemoryGame, MEMORY_NOTES, PressResult as MemoryPressResult } from '../modes/memory-mode'
+import { NoteFindGame, NOTE_FIND_NOTES, PressResult as NoteFindPressResult } from '../modes/note-find-mode'
 import { scoreRhythm, beatTimes } from '../modes/rhythm'
 import type { Mode } from '../modes/mode'
 import { Synth } from '../audio/synth'
 import { CURRICULUM, type Exercise } from '../content/curriculum'
 import { SONGS, type Song } from '../content/songs'
-import { SongMode, songHands, type HandSelection } from '../modes/song-mode'
+import { SongMode, songHands, HandSelection } from '../modes/song-mode'
 import {
   parseMidi,
   chartMode,
@@ -26,11 +26,11 @@ import {
   type ImportedSong,
 } from '../content/midi-import'
 import { MetricsStore } from '../progress/metrics-store'
-import { buildMasteryMap, type MasteryEntry, type MasteryState } from '../progress/mastery'
+import { buildMasteryMap, MasteryState, type MasteryEntry } from '../progress/mastery'
 import { buildProgressReport, renderProgressReport } from '../progress/progress-view'
-import { PATH, PATH_LESSONS, type PathLesson } from '../content/path'
-import { buildPathProgress, type PathLessonState } from '../progress/path-progress'
-import { resolveLocale, createI18n, type Locale, type MessageKey } from '../i18n'
+import { PATH, PATH_LESSONS, LessonKind, type PathLesson } from '../content/path'
+import { buildPathProgress, PathLessonState } from '../progress/path-progress'
+import { resolveLocale, createI18n, Locale, type MessageKey } from '../i18n'
 
 /**
  * Module-level translator. Defaults to an English-only lookup so node tests
@@ -38,10 +38,13 @@ import { resolveLocale, createI18n, type Locale, type MessageKey } from '../i18n
  * DOM. `bootstrap` reassigns it to the live i18n instance once the locale is
  * resolved from `navigator.language` + the stored override.
  */
-let t: (key: MessageKey) => string = key => createI18n('en').t(key)
+let t: (key: MessageKey) => string = key => createI18n(Locale.En).t(key)
 
 /** Build-time app version, injected by Vite from package.json. */
 declare const __APP_VERSION__: string
+
+/** Phases of the listen-then-repeat exercises (echo, memory). */
+enum Phase { Listen = 'listen', Repeat = 'repeat', Done = 'done' }
 
 /** Hit-window half-width (ms) shared by the engine matcher and the on-screen guide. */
 const WINDOW_MS = 150
@@ -94,7 +97,7 @@ export interface SelectedAdapter extends InputAdapter {
 // Idle adapter used when there is no real input source yet.
 // Fase 1 ships MIDI only; microphone input lands in Fase 2.
 class NullAdapter implements SelectedAdapter {
-  capabilities: Capabilities = { polyphonic: false, source: 'fake' }
+  capabilities: Capabilities = { polyphonic: false, source: InputSource.Fake }
   statusKey = 'input.noMidiMicLater'
   // eslint-disable-next-line @typescript-eslint/no-unused-vars
   onEvent(_cb: (e: InputEvent) => void): void {
@@ -124,7 +127,7 @@ export function selectAdapter(env: Env): SelectedAdapter {
  * index 0 is never locked, so there is always a non-locked entry).
  */
 export function pickCurrentExerciseId(map: MasteryEntry[]): string {
-  const inProgress = map.find(e => e.state === 'inProgress')
+  const inProgress = map.find(e => e.state === MasteryState.InProgress)
   if (inProgress) return inProgress.exerciseId
   return map[map.length - 1].exerciseId
 }
@@ -361,7 +364,7 @@ export function bootstrap(): void {
   }
 
   langToggle?.addEventListener('click', () => {
-    const next: Locale = i18n.locale === 'en' ? 'es' : 'en'
+    const next: Locale = i18n.locale === Locale.En ? Locale.Es : Locale.En
     i18n.set(next)
     window.localStorage.setItem(LANG_STORAGE_KEY, next)
     applyI18n()
@@ -388,7 +391,7 @@ export function bootstrap(): void {
   // key press sounds. The engine subscribes separately via its own wrapped
   // (song-time) adapter inside runChart — the two listeners coexist.
   const synth = new Synth()
-  selected.onEvent(e => (e.type === 'on' ? synth.noteOn(e.note) : synth.noteOff(e.note)))
+  selected.onEvent(e => (e.type === InputEventType.On ? synth.noteOn(e.note) : synth.noteOff(e.note)))
 
   // Start the input adapter ONCE here so EVERY activity (echo, free play, menu)
   // receives MIDI — not just the melody/scale flows whose engine used to be the
@@ -409,7 +412,7 @@ export function bootstrap(): void {
   const refreshReport = (): void => {
     const map = buildMasteryMap(CURRICULUM, id => store.sessionsFor(id))
     const stateFor = (id: string): MasteryState =>
-      map.find(e => e.exerciseId === id)?.state ?? 'locked'
+      map.find(e => e.exerciseId === id)?.state ?? MasteryState.Locked
     const report = buildProgressReport(CURRICULUM, id => store.sessionsFor(id), stateFor)
     renderProgressReport(reportEl, report)
   }
@@ -488,7 +491,7 @@ export function bootstrap(): void {
 
     d.selected.onEvent(e => {
       if (!running) return
-      if (e.type === 'on') activeNotes.add(e.note)
+      if (e.type === InputEventType.On) activeNotes.add(e.note)
       else activeNotes.delete(e.note)
     })
 
@@ -532,7 +535,7 @@ export function bootstrap(): void {
   const startEcho = (d: ExerciseDeps, s: Synth): void => {
     s.resume()
     let running = true
-    let phase: 'listen' | 'repeat' | 'done' = 'listen'
+    let phase: Phase = Phase.Listen
     let phrase = ECHO_PHRASES[echoIndex % ECHO_PHRASES.length]
     echoIndex++
     let matcher: SequenceMatcher | null = null
@@ -551,9 +554,9 @@ export function bootstrap(): void {
     // held notes for the glow.
     d.selected.onEvent(e => {
       if (!running) return
-      if (e.type === 'on') {
+      if (e.type === InputEventType.On) {
         activeNotes.add(e.note)
-        if (phase === 'repeat' && matcher && !matcher.done) {
+        if (phase === Phase.Repeat && matcher && !matcher.done) {
           matcher.press(e.note)
           if (matcher.done) finishRound()
         }
@@ -567,12 +570,12 @@ export function bootstrap(): void {
     let rafId = 0
     const loop = (): void => {
       if (!running) return
-      if (phase === 'listen') {
+      if (phase === Phase.Listen) {
         const sounding = listenIndex >= 0 && listenIndex < phrase.notes.length
         keyboard.draw(new Set(), sounding ? new Set([phrase.notes[listenIndex]]) : new Set<number>())
       } else {
         const next =
-          phase === 'repeat' && matcher && !matcher.done
+          phase === Phase.Repeat && matcher && !matcher.done
             ? new Set([phrase.notes[matcher.index]])
             : new Set<number>()
         keyboard.draw(activeNotes, next)
@@ -582,7 +585,7 @@ export function bootstrap(): void {
 
     const startRepeat = (): void => {
       if (!running) return
-      phase = 'repeat'
+      phase = Phase.Repeat
       matcher = new SequenceMatcher(phrase.notes)
       if (d.status) d.status.textContent = t('st.yourTurn')
     }
@@ -590,14 +593,14 @@ export function bootstrap(): void {
     // LISTEN: play the phrase, highlighting each note as it sounds, then REPEAT.
     const playRound = (): void => {
       if (!running) return
-      phase = 'listen'
+      phase = Phase.Listen
       matcher = null
       listenIndex = -1
       activeNotes.clear()
       if (d.status) d.status.textContent = t('st.listen')
       let step = 0
       const advanceListen = (): void => {
-        if (!running || phase !== 'listen') return
+        if (!running || phase !== Phase.Listen) return
         listenIndex = step
         step++
         if (step < phrase.notes.length) window.setTimeout(advanceListen, phrase.noteDurMs)
@@ -617,7 +620,7 @@ export function bootstrap(): void {
     // child keeps playing. The ← Menu button is the only way out.
     function finishRound(): void {
       if (!running) return
-      phase = 'done'
+      phase = Phase.Done
       const accuracy = matcher ? matcher.accuracy() : 0
       store.record({
         exerciseId: 'echo:' + phrase.id,
@@ -666,7 +669,7 @@ export function bootstrap(): void {
     s.resume()
     const game = new MemoryGame(() => MEMORY_NOTES[Math.floor(Math.random() * MEMORY_NOTES.length)])
     let running = true
-    let phase: 'listen' | 'repeat' | 'done' = 'listen'
+    let phase: Phase = Phase.Listen
     let listenIndex = -1 // index into the sequence while the app is playing it
     let ptr = 0 // local repeat pointer, mirrors the game's internal pointer
     const activeNotes = new Set<number>()
@@ -682,13 +685,13 @@ export function bootstrap(): void {
     // feeds the game; otherwise it just tracks held notes for the glow.
     d.selected.onEvent(e => {
       if (!running) return
-      if (e.type === 'on') {
+      if (e.type === InputEventType.On) {
         activeNotes.add(e.note)
-        if (phase === 'repeat') {
+        if (phase === Phase.Repeat) {
           const r = game.press(e.note)
-          if (r === 'correct') {
+          if (r === MemoryPressResult.Correct) {
             ptr++
-          } else if (r === 'complete') {
+          } else if (r === MemoryPressResult.Complete) {
             winRound()
           } else {
             loseRound()
@@ -705,12 +708,12 @@ export function bootstrap(): void {
     const loop = (): void => {
       if (!running) return
       const seq = game.sequence
-      if (phase === 'listen') {
+      if (phase === Phase.Listen) {
         const sounding = listenIndex >= 0 && listenIndex < seq.length
         keyboard.draw(new Set(), sounding ? new Set([seq[listenIndex]]) : new Set<number>())
       } else {
         const next =
-          phase === 'repeat' && ptr < seq.length ? new Set([seq[ptr]]) : new Set<number>()
+          phase === Phase.Repeat && ptr < seq.length ? new Set([seq[ptr]]) : new Set<number>()
         keyboard.draw(activeNotes, next)
       }
       rafId = requestAnimationFrame(loop)
@@ -721,7 +724,7 @@ export function bootstrap(): void {
     const playRound = (): void => {
       if (!running) return
       game.startRound()
-      phase = 'listen'
+      phase = Phase.Listen
       listenIndex = -1
       ptr = 0
       activeNotes.clear()
@@ -729,7 +732,7 @@ export function bootstrap(): void {
       const seq = game.sequence
       let step = 0
       const advanceListen = (): void => {
-        if (!running || phase !== 'listen') return
+        if (!running || phase !== Phase.Listen) return
         listenIndex = step
         step++
         if (step < seq.length) window.setTimeout(advanceListen, 500)
@@ -740,7 +743,7 @@ export function bootstrap(): void {
         () => {
           if (!running) return
           listenIndex = -1
-          phase = 'repeat'
+          phase = Phase.Repeat
           if (d.status) d.status.textContent = t('st.yourTurn')
         },
       )
@@ -749,7 +752,7 @@ export function bootstrap(): void {
     // Round won: level up, record, then chain a longer sequence.
     function winRound(): void {
       if (!running) return
-      phase = 'done'
+      phase = Phase.Done
       if (d.status) d.status.textContent = `${t('st.level')} ${game.sequence.length}! 🌟`
       store.record({
         exerciseId: 'memory',
@@ -765,7 +768,7 @@ export function bootstrap(): void {
     // Round lost: record, then restart from length 1 (keep the best).
     function loseRound(): void {
       if (!running) return
-      phase = 'done'
+      phase = Phase.Done
       if (d.status) d.status.textContent = `${t('st.best')}: ${game.longest} 🙈`
       store.record({
         exerciseId: 'memory',
@@ -831,10 +834,10 @@ export function bootstrap(): void {
     // the glow and, on note-ON, test the press against the current target.
     d.selected.onEvent(e => {
       if (!running) return
-      if (e.type === 'on') {
+      if (e.type === InputEventType.On) {
         activeNotes.add(e.note)
         const r = game.press(e.note)
-        if (r === 'correct') {
+        if (r === NoteFindPressResult.Correct) {
           findSum += performance.now() - shownAt
           if (game.done) {
             finishSet()
@@ -923,10 +926,10 @@ export function bootstrap(): void {
 
     d.selected.onEvent(e => {
       if (!running) return
-      if (e.type === 'on') {
+      if (e.type === InputEventType.On) {
         activeNotes.add(e.note)
         const r = game.press(e.note)
-        if (r === 'correct') {
+        if (r === NoteFindPressResult.Correct) {
           if (game.done) {
             finishSet()
           } else if (d.status) {
@@ -1010,7 +1013,7 @@ export function bootstrap(): void {
 
     d.selected.onEvent(e => {
       if (!running) return
-      if (e.type === 'on') {
+      if (e.type === InputEventType.On) {
         activeNotes.add(e.note)
         taps.push(performance.now())
       } else {
@@ -1239,11 +1242,11 @@ export function bootstrap(): void {
         handsRow.appendChild(b)
       }
       if (songHands(song).length === 1) {
-        addHand(t('hand.play'), 'R')
+        addHand(t('hand.play'), HandSelection.Right)
       } else {
-        addHand(t('hand.right'), 'R')
-        addHand(t('hand.left'), 'L')
-        addHand(t('hand.both'), 'both')
+        addHand(t('hand.right'), HandSelection.Right)
+        addHand(t('hand.left'), HandSelection.Left)
+        addHand(t('hand.both'), HandSelection.Both)
       }
       card.appendChild(handsRow)
       songList.appendChild(card)
@@ -1263,12 +1266,12 @@ export function bootstrap(): void {
   const pathBack = document.getElementById('path-back')
 
   const lessonMode = (lesson: PathLesson): Mode => {
-    if (lesson.kind === 'chord') {
+    if (lesson.kind === LessonKind.Chord) {
       return new ChordMode({ id: lesson.id, title: lesson.title, bpm: lesson.bpm, chords: lesson.chords ?? [], passAccuracy: lesson.passAccuracy })
     }
-    if (lesson.kind === 'twohands') {
+    if (lesson.kind === LessonKind.TwoHands) {
       const song: Song = { id: lesson.id, title: lesson.title, bpm: lesson.bpm, right: lesson.right ?? [], left: lesson.left }
-      return new SongMode(song, 'both')
+      return new SongMode(song, HandSelection.Both)
     }
     return new MelodyMode({ id: lesson.id, title: lesson.title, bpm: lesson.bpm, notes: lesson.notes ?? [], passAccuracy: lesson.passAccuracy })
   }
@@ -1318,7 +1321,7 @@ export function bootstrap(): void {
     if (!pathList) return
     const progress = buildPathProgress(PATH_LESSONS, id => store.sessionsFor(`path:${id}`))
     const stateOf = (id: string): PathLessonState =>
-      progress.find(p => p.id === id)?.state ?? 'locked'
+      progress.find(p => p.id === id)?.state ?? PathLessonState.Locked
 
     pathList.replaceChildren()
     for (const unit of PATH) {
@@ -1331,7 +1334,7 @@ export function bootstrap(): void {
 
       for (const lesson of unit.lessons) {
         const st = stateOf(lesson.id)
-        const launchable = st === 'current' || st === 'passed' || st === 'mastered'
+        const launchable = st === PathLessonState.Current || st === PathLessonState.Passed || st === PathLessonState.Mastered
         const node = document.createElement('button')
         node.type = 'button'
         node.className = `path-node path-node--${st}`
@@ -1391,7 +1394,7 @@ export function bootstrap(): void {
     backBtn?.addEventListener('click', exit)
     backBtn?.classList.remove('hidden')
 
-    const chart = filterChartByHand(imported.chart, 'both')
+    const chart = filterChartByHand(imported.chart, HandSelection.Both)
     stopRun = runChartWaiting(chartMode(chart), imported.title, deps, engine => {
       if (!alive) return
       store.record({ exerciseId: 'import', timestamp: Date.now(), summary: engine.summary() })

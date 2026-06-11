@@ -8,6 +8,8 @@
  * picker is injected (random in the app, deterministic in tests).
  */
 
+export enum PressResult { Correct = 'correct', Wrong = 'wrong', Complete = 'complete' }
+
 /** White keys of one octave around middle C — the note bank for memory. */
 export const MEMORY_NOTES = [60, 62, 64, 65, 67, 69, 71, 72]
 
@@ -43,14 +45,14 @@ export class MemoryGame {
    * 'complete' — right note that finishes the sequence (round won; updates longest).
    * 'correct'  — right note, more to go.
    */
-  press(midi: number): 'correct' | 'wrong' | 'complete' {
-    if (midi !== this.seq[this.ptr]) return 'wrong'
+  press(midi: number): PressResult {
+    if (midi !== this.seq[this.ptr]) return PressResult.Wrong
     this.ptr++
     if (this.ptr >= this.seq.length) {
       this.best = Math.max(this.best, this.seq.length)
-      return 'complete'
+      return PressResult.Complete
     }
-    return 'correct'
+    return PressResult.Correct
   }
 
   /** Clear the sequence and pointer, KEEPING the best length. */

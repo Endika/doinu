@@ -8,6 +8,8 @@
  * is measured by the controller, not here.
  */
 
+export enum PressResult { Correct = 'correct', Wrong = 'wrong' }
+
 /** White keys of one octave around middle C — the note bank for find-the-note. */
 export const NOTE_FIND_NOTES = [60, 62, 64, 65, 67, 69, 71, 72]
 
@@ -49,14 +51,14 @@ export class NoteFindGame {
    * 'correct' — hit the target (advances to the next target unless done).
    * 'wrong'   — any other key (counts against accuracy, target unchanged).
    */
-  press(midi: number): 'correct' | 'wrong' {
+  press(midi: number): PressResult {
     if (midi === this.cur) {
       this.hitCount++
       if (!this.done) this.cur = this.pickTarget()
-      return 'correct'
+      return PressResult.Correct
     }
     this.wrongCount++
-    return 'wrong'
+    return PressResult.Wrong
   }
 
   /** Share of presses that hit the target; 1 before any press. */

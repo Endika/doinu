@@ -1,4 +1,4 @@
-export type ScoreResult = 'hit' | 'wrong' | 'missed'
+export enum ScoreResult { Hit = 'hit', Wrong = 'wrong', Missed = 'missed' }
 
 export interface ScoreRecord {
   result: ScoreResult

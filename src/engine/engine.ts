@@ -1,9 +1,9 @@
 import type { InputAdapter } from '../core/input-adapter'
-import type { InputEvent } from '../core/events'
+import { InputEventType, type InputEvent } from '../core/events'
 import type { Clock } from '../core/clock'
 import type { Chart, Target } from './chart'
-import { Matcher } from './matcher'
-import { Scorer, type Summary } from './scoring'
+import { Matcher, MatchOutcome } from './matcher'
+import { Scorer, ScoreResult, type Summary } from './scoring'
 
 export interface EngineOptions { windowMs: number }
 
@@ -43,18 +43,18 @@ export class Engine {
   }
 
   onInput(e: InputEvent): void {
-    if (e.type === 'on') this.activeNotes.add(e.note)
+    if (e.type === InputEventType.On) this.activeNotes.add(e.note)
     else this.activeNotes.delete(e.note)
 
     const r = this.matcher.handle(e)
-    if (r.result === 'hit') {
+    if (r.result === MatchOutcome.Hit) {
       this.scorer.record({
-        result: 'hit',
+        result: ScoreResult.Hit,
         timingDevMs: r.timingDevMs,
         findMs: this.computeFindMs(r.target!, e),
       })
-    } else if (r.result === 'wrong') {
-      this.scorer.record({ result: 'wrong' })
+    } else if (r.result === MatchOutcome.Wrong) {
+      this.scorer.record({ result: ScoreResult.Wrong })
     }
     // 'ignored' (note-off) → no scoring.
   }
@@ -64,7 +64,7 @@ export class Engine {
     for (const t of this.matcher.missed()) {
       if (this.recordedMissed.has(t.id)) continue
       this.recordedMissed.add(t.id)
-      this.scorer.record({ result: 'missed' })
+      this.scorer.record({ result: ScoreResult.Missed })
     }
   }
 

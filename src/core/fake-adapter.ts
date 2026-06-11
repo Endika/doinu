@@ -1,7 +1,7 @@
-import type { InputAdapter, Capabilities } from './input-adapter'
+import { InputSource, type InputAdapter, type Capabilities } from './input-adapter'
 import type { InputEvent } from './events'
 export class FakeInputAdapter implements InputAdapter {
-  capabilities: Capabilities = { polyphonic: true, source: 'fake' }
+  capabilities: Capabilities = { polyphonic: true, source: InputSource.Fake }
   private cb: (e: InputEvent) => void = () => {}
   constructor(private script: InputEvent[]) {}
   onEvent(cb: (e: InputEvent) => void) { this.cb = cb }

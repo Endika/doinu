@@ -1,4 +1,4 @@
-import type { Chart, Target } from '../engine/chart'
+import { Hand, type Chart, type Target } from '../engine/chart'
 import type { Summary } from '../engine/scoring'
 import type { Mode, Verdict } from './mode'
 
@@ -32,7 +32,7 @@ export class ScaleMode implements Mode {
       midi,
       startMs: i * beatMs,
       durMs: beatMs,
-      hand: 'R',
+      hand: Hand.Right,
     }))
     return { bpm, targets }
   }

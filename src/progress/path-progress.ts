@@ -10,7 +10,7 @@ import type { PathLesson } from '../content/path'
  * - `passed`   — cleared at least once (unlocks the next), not yet mastered.
  * - `mastered` — passed consistently (3 sessions) → earns the ⭐.
  */
-export type PathLessonState = 'locked' | 'current' | 'passed' | 'mastered' | 'soon'
+export enum PathLessonState { Locked = 'locked', Current = 'current', Passed = 'passed', Mastered = 'mastered', Soon = 'soon' }
 
 export interface PathLessonProgress {
   id: string
@@ -36,20 +36,20 @@ export function buildPathProgress(
   let reachable = true // the first buildable lesson is reachable
   return lessons.map(lesson => {
     if (lesson.milestone > 1) {
-      return { id: lesson.id, state: 'soon' }
+      return { id: lesson.id, state: PathLessonState.Soon }
     }
     if (!reachable) {
-      return { id: lesson.id, state: 'locked' }
+      return { id: lesson.id, state: PathLessonState.Locked }
     }
     const sessions = sessionsFor(lesson.id)
     if (isMastered(sessions, lesson.passAccuracy, findThresholdMs)) {
-      return { id: lesson.id, state: 'mastered' } // stays reachable
+      return { id: lesson.id, state: PathLessonState.Mastered } // stays reachable
     }
     if (isPassed(sessions, lesson.passAccuracy)) {
-      return { id: lesson.id, state: 'passed' } // stays reachable
+      return { id: lesson.id, state: PathLessonState.Passed } // stays reachable
     }
     // first reachable, not yet passed → current; everything after is locked
     reachable = false
-    return { id: lesson.id, state: 'current' }
+    return { id: lesson.id, state: PathLessonState.Current }
   })
 }

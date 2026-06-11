@@ -5,6 +5,8 @@
  * matcher.
  */
 
+export enum PressResult { Correct = 'correct', Wrong = 'wrong' }
+
 export interface Phrase {
   id: string
   title: string
@@ -39,13 +41,13 @@ export class SequenceMatcher {
    * advance and return 'correct'. Otherwise (wrong pitch, or already done)
    * count a wrong and return 'wrong'.
    */
-  press(midi: number): 'correct' | 'wrong' {
+  press(midi: number): PressResult {
     if (!this.done && midi === this.expected[this.idx]) {
       this.idx++
-      return 'correct'
+      return PressResult.Correct
     }
     this.wrongCount++
-    return 'wrong'
+    return PressResult.Wrong
   }
 
   /** How many notes matched so far. */
