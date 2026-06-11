@@ -1792,13 +1792,90 @@ export function bootstrap(): void {
   // Wire the MAIN menu buttons only (those with a data-activity). NOT the song
   // list buttons — they are also `.menu-btn` but have their own handlers; a broad
   // `.menu-btn` selector double-bound them and fired startScale('') over the song.
+  // Mic test & tuning: a live readout of what the mic hears (note + volume vs the
+  // noise gate), a sensitivity slider, and a 2-second quiet calibration. Only
+  // meaningful on the microphone input; also doubles as the place to enable it.
+  let showMicTest = (): void => {}
+  const micTestBtn = document.getElementById('mictest-btn')
+  micTestBtn?.classList.toggle('hidden', !usingMic)
+  if (selected instanceof MicInputAdapter && micTestBtn) {
+    const mic = selected
+    const overlay = document.getElementById('mictest')
+    const noteEl = document.getElementById('mictest-note')
+    const stateEl = document.getElementById('mictest-state')
+    const levelEl = document.getElementById('mictest-level')
+    const gateEl = document.getElementById('mictest-gate')
+    const slider = document.getElementById('mictest-slider') as HTMLInputElement | null
+    const calibrateBtn = document.getElementById('mictest-calibrate')
+    const micTestBack = document.getElementById('mictest-back')
+
+    const NOTE_NAMES = ['C', 'C#', 'D', 'D#', 'E', 'F', 'F#', 'G', 'G#', 'A', 'A#', 'B']
+    const midiName = (m: number): string => `${NOTE_NAMES[((m % 12) + 12) % 12]}${Math.floor(m / 12) - 1}`
+    const METER_MAX = 0.12
+    const sliderToGate = (s: number): number => 0.002 + (1 - s / 100) * 0.058
+    const gateToSlider = (g: number): number => Math.round((1 - (g - 0.002) / 0.058) * 100)
+
+    let active = false
+    let calibrating = false
+    let calibSamples: number[] = []
+
+    mic.onFrame(f => {
+      if (!active) return
+      if (calibrating) {
+        calibSamples.push(f.rms)
+        return
+      }
+      if (noteEl) noteEl.textContent = f.midi !== null ? midiName(f.midi) : '—'
+      if (levelEl) levelEl.style.width = `${Math.min(100, (f.rms / METER_MAX) * 100)}%`
+      if (gateEl) gateEl.style.left = `${Math.min(100, (f.gate / METER_MAX) * 100)}%`
+      if (stateEl) stateEl.textContent = f.rms < f.gate ? t('mictest.quiet') : f.midi !== null ? t('mictest.detecting') : t('mictest.noise')
+    })
+
+    slider?.addEventListener('input', () => mic.setSensitivity(sliderToGate(Number(slider.value))))
+
+    calibrateBtn?.addEventListener('click', () => {
+      calibrating = true
+      calibSamples = []
+      if (stateEl) stateEl.textContent = t('mictest.calibrating')
+      window.setTimeout(() => {
+        calibrating = false
+        if (calibSamples.length > 0) {
+          const ambient = Math.max(...calibSamples)
+          const gate = Math.max(ambient * 2.5, 0.004)
+          mic.setSensitivity(gate)
+          if (slider) slider.value = String(gateToSlider(gate))
+        }
+      }, 2000)
+    })
+
+    micTestBack?.addEventListener('click', () => {
+      active = false
+      overlay?.classList.add('hidden')
+      showMenu()
+    })
+
+    showMicTest = (): void => {
+      active = true
+      synth.resume()
+      void mic.start().then(() => { noInput = false }).catch(() => { /* mic denied */ })
+      if (slider) slider.value = String(gateToSlider(mic.sensitivity))
+      if (status) status.textContent = ''
+      overlay?.classList.remove('hidden')
+    }
+  }
+
   const buttons = document.querySelectorAll<HTMLButtonElement>('#menu .menu-btn[data-activity]')
   buttons.forEach(btn => {
     btn.addEventListener('click', () => {
+      const activity = btn.dataset.activity
+      if (activity === 'mictest') {
+        hideMenu()
+        showMicTest()
+        return
+      }
       if (noInput) return // buttons inert without a real input source
       synth.resume()
       hideMenu()
-      const activity = btn.dataset.activity
       if (activity === 'path') showPath()
       else if (activity === 'compose') showMyMelodies()
       else if (activity === 'melody') resumeMelody()

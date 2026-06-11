@@ -427,6 +427,51 @@
       #mic-enable { background: #e0356b; }
       #input-toggle { background: #6d5dfc; font-size: 0.98rem; padding: 0.7rem 1rem; }
       #wait-toggle { background: #7c83ff; font-size: 0.98rem; padding: 0.7rem 1rem; }
+      .menu-btn[data-activity='mictest'] { background: #5cd0e0; }
+      #mictest {
+        position: fixed;
+        inset: 0;
+        z-index: 30;
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        justify-content: center;
+        background: var(--sky);
+      }
+      #mictest.hidden { display: none; }
+      #mictest .menu-card {
+        display: flex;
+        flex-direction: column;
+        align-items: stretch;
+        gap: 0.7rem;
+        width: min(94vw, 26rem);
+        padding: 1.2rem;
+        box-sizing: border-box;
+      }
+      #mictest .menu-title,
+      #mictest .menu-sub { text-align: center; }
+      #mictest-note {
+        text-align: center;
+        font-size: 3.4rem;
+        font-weight: 800;
+        color: var(--ink);
+        min-height: 4rem;
+        line-height: 1.1;
+      }
+      #mictest-state { text-align: center; font-weight: 700; color: #8a5be0; min-height: 1.4rem; }
+      #mictest-meter {
+        position: relative;
+        height: 1.6rem;
+        border-radius: 0.8rem;
+        background: rgba(124, 92, 255, 0.18);
+        overflow: hidden;
+      }
+      #mictest-level { height: 100%; width: 0%; background: #4cd4a0; }
+      #mictest-gate { position: absolute; top: 0; bottom: 0; width: 3px; background: #e0356b; left: 10%; }
+      #mictest-sens { display: flex; flex-direction: column; gap: 0.3rem; font-weight: 700; color: var(--ink); }
+      #mictest-slider { width: 100%; }
+      #mictest-calibrate { background: #ff9f6b; }
+      #mictest-back { background: #6d5dfc; }
       #compose-stop {
         position: fixed;
         left: 50%;
@@ -603,6 +648,7 @@
         <button id="mic-enable" class="menu-btn hidden" type="button" data-i18n="input.micEnable">🎤 Enable microphone</button>
         <button id="input-toggle" class="menu-btn hidden" type="button">🎤 Use microphone</button>
         <button id="wait-toggle" class="menu-btn" type="button">🐢 Wait for the note: ON</button>
+        <button id="mictest-btn" class="menu-btn hidden" type="button" data-activity="mictest" data-i18n="act.mictest">🎤 Mic test</button>
       </div>
       <div id="menu-status" class="menu-status"></div>
       <p id="version" class="menu-version"></p>
@@ -648,6 +694,20 @@
           <button id="name-save" class="menu-btn" type="button" data-i18n="compose.save">💾 Save</button>
           <button id="name-cancel" class="menu-btn" type="button" data-i18n="compose.cancel">✗ Cancel</button>
         </div>
+      </div>
+    </div>
+    <div id="mictest" class="hidden">
+      <div class="menu-card">
+        <h1 class="menu-title" data-i18n="mictest.title">🎤 Mic test</h1>
+        <p class="menu-sub" data-i18n="mictest.sub">See what the mic hears 🎧</p>
+        <div id="mictest-note">—</div>
+        <div id="mictest-state" data-i18n="mictest.quiet">Quiet</div>
+        <div id="mictest-meter"><div id="mictest-level"></div><div id="mictest-gate"></div></div>
+        <label id="mictest-sens"><span data-i18n="mictest.sensitivity">Sensitivity</span>
+          <input id="mictest-slider" type="range" min="0" max="100" value="86" />
+        </label>
+        <button id="mictest-calibrate" class="menu-btn" type="button" data-i18n="mictest.calibrate">🤫 Calibrate (2s quiet)</button>
+        <button id="mictest-back" class="menu-btn" type="button" data-i18n="nav.back">← Menu</button>
       </div>
     </div>
     <button id="compose-stop" class="hidden" type="button" data-i18n="compose.stop">■ Stop</button>
