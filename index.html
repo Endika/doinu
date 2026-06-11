@@ -385,6 +385,97 @@
         padding-right: 0.25rem;
         gap: 0.7rem;
       }
+      /* Compose / My melodies: reuse the overlay look + a small naming modal. */
+      #mymelodies {
+        position: fixed;
+        inset: 0;
+        z-index: 30;
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        justify-content: center;
+        background: var(--sky);
+      }
+      #mymelodies.hidden { display: none; }
+      #mymelodies .menu-card {
+        display: flex;
+        flex-direction: column;
+        align-items: stretch;
+        gap: 0.55rem;
+        width: min(94vw, 30rem);
+        height: 92vh;
+        max-height: 92vh;
+        padding: 1.1rem 1.1rem 0.9rem;
+        box-sizing: border-box;
+      }
+      #mymelodies .menu-title,
+      #mymelodies .menu-sub { flex: 0 0 auto; text-align: center; }
+      #compose-record { flex: 0 0 auto; background: #ff5d8f; }
+      #mymelodies-back { flex: 0 0 auto; margin-top: 0.4rem; background: #6d5dfc; }
+      #melody-list {
+        flex: 1 1 auto;
+        min-height: 0;
+        overflow-x: hidden;
+        overflow-y: auto;
+        display: flex;
+        flex-direction: column;
+        padding-right: 0.25rem;
+        gap: 0.6rem;
+      }
+      .menu-btn[data-activity='compose'] { background: #ff5d8f; }
+      #compose-stop {
+        position: fixed;
+        left: 50%;
+        bottom: 1.4rem;
+        transform: translateX(-50%);
+        z-index: 26;
+        border: none;
+        border-radius: 999px;
+        padding: 0.9rem 2.2rem;
+        font-family: var(--font);
+        font-size: 1.2rem;
+        font-weight: 800;
+        color: #fff;
+        background: #e0356b;
+        cursor: pointer;
+        box-shadow: 0 8px 20px rgba(120, 20, 60, 0.45);
+      }
+      #compose-stop.hidden { display: none; }
+      #name-prompt {
+        position: fixed;
+        inset: 0;
+        z-index: 32;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        background: rgba(40, 20, 90, 0.55);
+      }
+      #name-prompt.hidden { display: none; }
+      .name-card {
+        display: flex;
+        flex-direction: column;
+        gap: 0.9rem;
+        width: min(88vw, 22rem);
+        padding: 1.4rem;
+        border-radius: 1.4rem;
+        background: #fff;
+        box-shadow: 0 20px 50px rgba(60, 30, 120, 0.5);
+      }
+      .name-q { margin: 0; text-align: center; font-size: 1.2rem; font-weight: 800; color: var(--ink); }
+      #name-input {
+        font-family: var(--font);
+        font-size: 1.2rem;
+        padding: 0.7rem 0.9rem;
+        border: 2px solid #c9b8ff;
+        border-radius: 0.8rem;
+        color: var(--ink);
+        text-align: center;
+      }
+      #name-input:focus { outline: none; border-color: #8a5be0; }
+      .name-actions { display: flex; gap: 0.6rem; }
+      .name-actions .menu-btn { flex: 1 1 0; font-size: 1.05rem; padding: 0.8rem 0.5rem; }
+      #name-save { background: #4cd4a0; }
+      #name-cancel { background: #ff8f6b; }
       .path-unit {
         width: 100%;
         box-sizing: border-box;
@@ -493,6 +584,7 @@
           <button class="menu-btn" type="button" data-activity="melody" data-i18n="act.melody">🎵 Melody</button>
           <button class="menu-btn" type="button" data-activity="songs" data-i18n="act.songs">🎶 Songs</button>
           <button class="menu-btn" type="button" data-activity="import" data-i18n="act.import">📂 Load MIDI</button>
+          <button class="menu-btn" type="button" data-activity="compose" data-i18n="act.compose">🎤 Make a melody</button>
           <button class="menu-btn" type="button" data-activity="practice" data-i18n="act.practice">🐢 Practice (wait)</button>
           <button class="menu-btn" type="button" data-activity="progress" data-i18n="act.progress">📊 Progress</button>
           <button class="menu-btn" type="button" data-activity="echo" data-i18n="act.echo">🔁 Echo</button>
@@ -532,6 +624,26 @@
         <button id="progress-back" class="menu-btn" type="button" data-i18n="nav.back">← Menu</button>
       </div>
     </div>
+    <div id="mymelodies" class="hidden">
+      <div class="menu-card">
+        <h1 class="menu-title" data-i18n="compose.title">🎤 My melodies</h1>
+        <p class="menu-sub" data-i18n="compose.sub">Make your own tune 🎹</p>
+        <button id="compose-record" class="menu-btn" type="button" data-i18n="compose.recordNew">● Record new</button>
+        <div id="melody-list" class="menu-list"></div>
+        <button id="mymelodies-back" class="menu-btn" type="button" data-i18n="nav.back">← Menu</button>
+      </div>
+    </div>
+    <div id="name-prompt" class="hidden">
+      <div class="name-card">
+        <p class="name-q" data-i18n="compose.namePrompt">What's your melody called?</p>
+        <input id="name-input" type="text" maxlength="40" autocomplete="off" />
+        <div class="name-actions">
+          <button id="name-save" class="menu-btn" type="button" data-i18n="compose.save">💾 Save</button>
+          <button id="name-cancel" class="menu-btn" type="button" data-i18n="compose.cancel">✗ Cancel</button>
+        </div>
+      </div>
+    </div>
+    <button id="compose-stop" class="hidden" type="button" data-i18n="compose.stop">■ Stop</button>
     <button id="back-menu" class="hidden" type="button" data-i18n="nav.back">← Menu</button>
     <input
       id="midi-file"

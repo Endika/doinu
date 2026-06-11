@@ -32,6 +32,8 @@ import { buildMasteryMap, MasteryState, type MasteryEntry } from '../progress/ma
 import { buildProgressReport, renderProgressReport } from '../progress/progress-view'
 import { PATH, PATH_LESSONS, LessonKind, type PathLesson } from '../content/path'
 import { buildPathProgress, PathLessonState } from '../progress/path-progress'
+import { CompositionRecorder, type RecordedNote } from '../modes/composition-recorder'
+import { CompositionStore, compositionChart, type Composition } from '../progress/composition-store'
 import { resolveLocale, createI18n, Locale, type MessageKey } from '../i18n'
 
 /**
@@ -1467,6 +1469,193 @@ export function bootstrap(): void {
     showMenu()
   })
 
+  // Compose / My melodies: record what you play (real timing), name and save it,
+  // then practise it in wait mode. Goes through the selected InputAdapter, so it
+  // will work with the future iPad microphone too (monophonic).
+  const compStore = new CompositionStore(window.localStorage)
+  const myMelodiesOverlay = document.getElementById('mymelodies')
+  const melodyList = document.getElementById('melody-list')
+  const composeRecordBtn = document.getElementById('compose-record')
+  const myMelodiesBack = document.getElementById('mymelodies-back')
+  const composeStop = document.getElementById('compose-stop')
+  const namePrompt = document.getElementById('name-prompt')
+  const nameInput = document.getElementById('name-input') as HTMLInputElement | null
+  const nameSave = document.getElementById('name-save')
+  const nameCancel = document.getElementById('name-cancel')
+
+  const showMyMelodies = (): void => {
+    if (status) status.textContent = ''
+    renderMyMelodies()
+    myMelodiesOverlay?.classList.remove('hidden')
+  }
+  const hideMyMelodies = (): void => myMelodiesOverlay?.classList.add('hidden')
+
+  // Practise one saved melody in wait mode (its own notes fall, you reproduce them).
+  const practiceComposition = (c: Composition): void => {
+    synth.resume()
+    hideMyMelodies()
+    let alive = true
+    let stopRun: (() => void) | null = null
+    let timer = 0
+    const exit = (): void => {
+      if (!alive) return
+      alive = false
+      stopRun?.()
+      window.clearTimeout(timer)
+      backBtn?.removeEventListener('click', exit)
+      backBtn?.classList.add('hidden')
+      if (status) status.textContent = ''
+      showMyMelodies()
+    }
+    backBtn?.addEventListener('click', exit)
+    backBtn?.classList.remove('hidden')
+    stopRun = runChartWaiting(chartMode(compositionChart(c.notes)), c.name, deps, engine => {
+      if (!alive) return
+      store.record({ exerciseId: `compose:${c.id}`, timestamp: Date.now(), summary: engine.summary() })
+      refreshReport()
+      if (status) status.textContent = formatSummary(engine.summary())
+      timer = window.setTimeout(() => exit(), 2500)
+    })
+  }
+
+  function renderMyMelodies(): void {
+    if (!melodyList) return
+    const all = compStore.all()
+    melodyList.replaceChildren()
+    if (all.length === 0) {
+      const empty = document.createElement('div')
+      empty.className = 'song-title'
+      empty.style.opacity = '0.8'
+      empty.textContent = t('compose.empty')
+      melodyList.appendChild(empty)
+      return
+    }
+    for (const c of all) {
+      const card = document.createElement('div')
+      card.className = 'song-card'
+      const title = document.createElement('div')
+      title.className = 'song-title'
+      title.textContent = c.name
+      card.appendChild(title)
+      const row = document.createElement('div')
+      row.className = 'song-hands'
+      const play = document.createElement('button')
+      play.className = 'hand-btn'
+      play.type = 'button'
+      play.dataset.hand = 'R'
+      play.textContent = t('compose.practice')
+      play.addEventListener('click', () => practiceComposition(c))
+      const del = document.createElement('button')
+      del.className = 'hand-btn'
+      del.type = 'button'
+      del.dataset.hand = 'L'
+      del.style.flex = '0 0 3.2rem'
+      del.textContent = t('compose.delete')
+      del.addEventListener('click', () => {
+        compStore.remove(c.id)
+        renderMyMelodies()
+      })
+      row.appendChild(play)
+      row.appendChild(del)
+      card.appendChild(row)
+      melodyList.appendChild(card)
+    }
+  }
+
+  // Naming modal: shown after a non-empty recording stops.
+  const askName = (notes: RecordedNote[]): void => {
+    if (nameInput) nameInput.value = `${t('compose.defaultName')} ${compStore.all().length + 1}`
+    namePrompt?.classList.remove('hidden')
+    nameInput?.focus()
+    nameInput?.select()
+    function close(): void {
+      namePrompt?.classList.add('hidden')
+      nameSave?.removeEventListener('click', onSave)
+      nameCancel?.removeEventListener('click', onCancel)
+    }
+    function onSave(): void {
+      const name = (nameInput?.value ?? '').trim() || t('compose.defaultName')
+      compStore.save({ name, createdAt: Date.now(), notes })
+      close()
+      showMyMelodies()
+    }
+    function onCancel(): void {
+      close()
+      showMyMelodies()
+    }
+    nameSave?.addEventListener('click', onSave)
+    nameCancel?.addEventListener('click', onCancel)
+  }
+
+  // Recording: subscribe to the raw adapter, capture timing, glow the keys. Audio
+  // comes from the global synth listener. ■ Stop -> name it; ← Menu cancels.
+  const startRecording = (): void => {
+    synth.resume()
+    hideMyMelodies()
+    const recorder = new CompositionRecorder()
+    let running = true
+    const activeNotes = new Set<number>()
+
+    sizeCanvas(deps.stageCanvas)
+    sizeCanvas(deps.keysCanvas)
+    const stageCtx = deps.stageCanvas?.getContext('2d') ?? null
+    const keysCtx = deps.keysCanvas?.getContext('2d') ?? null
+    if (stageCtx && deps.stageCanvas) stageCtx.clearRect(0, 0, deps.stageCanvas.width, deps.stageCanvas.height)
+    const keyboard = new Keyboard(keysCtx)
+
+    if (status) status.textContent = t('compose.recording')
+
+    deps.selected.onEvent(e => {
+      if (!running) return
+      recorder.feed(e)
+      if (e.type === InputEventType.On) activeNotes.add(e.note)
+      else activeNotes.delete(e.note)
+      if (status) status.textContent = `${t('compose.recording')} (${recorder.count})`
+    })
+
+    let rafId = 0
+    const loop = (): void => {
+      if (!running) return
+      keyboard.draw(activeNotes)
+      rafId = requestAnimationFrame(loop)
+    }
+    rafId = requestAnimationFrame(loop)
+
+    function teardown(): void {
+      running = false
+      cancelAnimationFrame(rafId)
+      composeStop?.classList.add('hidden')
+      composeStop?.removeEventListener('click', onStop)
+      backBtn?.removeEventListener('click', onCancel)
+      backBtn?.classList.add('hidden')
+      if (status) status.textContent = ''
+    }
+    function onCancel(): void {
+      teardown()
+      showMyMelodies()
+    }
+    function onStop(): void {
+      const notes = recorder.finish(performance.now())
+      teardown()
+      if (notes.length === 0) {
+        showMyMelodies()
+        return
+      }
+      askName(notes)
+    }
+
+    composeStop?.classList.remove('hidden')
+    composeStop?.addEventListener('click', onStop)
+    backBtn?.addEventListener('click', onCancel)
+    backBtn?.classList.remove('hidden')
+  }
+
+  composeRecordBtn?.addEventListener('click', startRecording)
+  myMelodiesBack?.addEventListener('click', () => {
+    hideMyMelodies()
+    showMenu()
+  })
+
   // MIDI import: load a .mid from the device, parse it locally (no network),
   // split into hands and play it in practice (wait) mode. Defaults to BOTH hands
   // so the learner hears the whole song. The in-game ← Menu returns to the main
@@ -1553,6 +1742,7 @@ export function bootstrap(): void {
       hideMenu()
       const activity = btn.dataset.activity
       if (activity === 'path') showPath()
+      else if (activity === 'compose') showMyMelodies()
       else if (activity === 'melody') resumeMelody()
       else if (activity === 'songs') showSongs()
       else if (activity === 'import') startImport()
