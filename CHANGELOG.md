@@ -1,5 +1,12 @@
 # Changelog
 
+## [0.5.2](https://github.com/Endika/doinu/compare/v0.5.1...v0.5.2) (2026-06-11)
+
+
+### Refactor
+
+* single pitch module with semantic chord/scale builders ([420f0ac](https://github.com/Endika/doinu/commit/420f0acb4b3aa21778724732cfd8318fed9348dc))
+
 ## [0.5.1](https://github.com/Endika/doinu/compare/v0.5.0...v0.5.1) (2026-06-11)
 
 
