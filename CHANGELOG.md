@@ -1,5 +1,12 @@
 # Changelog
 
+## [0.14.0](https://github.com/Endika/doinu/compare/v0.13.0...v0.14.0) (2026-06-11)
+
+
+### Features
+
+* **mic:** live test screen, sensitivity, calibration, re-attack ([279add7](https://github.com/Endika/doinu/commit/279add7c1c4f2e2fff8bf50f518ed5c8ce5cc597))
+
 ## [0.13.0](https://github.com/Endika/doinu/compare/v0.12.0...v0.13.0) (2026-06-11)
 
 
