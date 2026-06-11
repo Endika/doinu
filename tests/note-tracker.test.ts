@@ -41,3 +41,28 @@ describe('NoteTracker', () => {
     expect(t.sounding).toBe(67)
   })
 })
+
+describe('NoteTracker re-attack (repeated same note)', () => {
+  it('re-triggers the sounding note on an amplitude onset', () => {
+    const t = new NoteTracker(2)
+    const out: InputEvent[] = []
+    out.push(...t.feed(60, 0)) // commit C
+    out.push(...t.feed(60, 1)) // (already commits on 2nd identical with stable=2)
+    out.push(...t.feed(60, 2, true)) // re-attack on the same pitch
+    expect(types(out)).toEqual([
+      `${InputEventType.On}:60`,
+      `${InputEventType.Off}:60`,
+      `${InputEventType.On}:60`,
+    ])
+  })
+
+  it('does not re-trigger the same note without an onset', () => {
+    const t = new NoteTracker(2)
+    const out: InputEvent[] = []
+    out.push(...t.feed(60, 0))
+    out.push(...t.feed(60, 1))
+    out.push(...t.feed(60, 2)) // no onset
+    out.push(...t.feed(60, 3))
+    expect(types(out)).toEqual([`${InputEventType.On}:60`])
+  })
+})

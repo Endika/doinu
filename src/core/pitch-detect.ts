@@ -94,3 +94,22 @@ export function detectPitchMidi(buf: Float32Array, sampleRate: number, opts?: Pi
   const hz = detectPitchHz(buf, sampleRate, opts)
   return hz === null ? null : freqToMidi(hz)
 }
+
+/** Root-mean-square level of a frame (the loudness, 0..~1). */
+export function rms(buf: Float32Array): number {
+  let sum = 0
+  for (let i = 0; i < buf.length; i++) sum += buf[i] * buf[i]
+  return Math.sqrt(sum / buf.length)
+}
+
+export interface FrameAnalysis {
+  rms: number
+  hz: number | null
+  midi: number | null
+}
+
+/** Everything the live mic readout needs from one frame: loudness + pitch. */
+export function analyzeFrame(buf: Float32Array, sampleRate: number, opts?: PitchOptions): FrameAnalysis {
+  const hz = detectPitchHz(buf, sampleRate, opts)
+  return { rms: rms(buf), hz, midi: hz === null ? null : freqToMidi(hz) }
+}

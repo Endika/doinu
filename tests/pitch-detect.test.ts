@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest'
-import { detectPitchHz, detectPitchMidi, freqToMidi } from '../src/core/pitch-detect'
+import { detectPitchHz, detectPitchMidi, freqToMidi, rms, analyzeFrame } from '../src/core/pitch-detect'
 
 const SR = 44100
 const N = 2048 // ~46 ms frame at 44.1 kHz (what an AnalyserNode fftSize=2048 gives)
@@ -59,5 +59,19 @@ describe('silence and noise gating', () => {
   })
   it('returns null on a sub-threshold (too quiet) tone', () => {
     expect(detectPitchHz(sine(440, 0.001), SR)).toBeNull()
+  })
+})
+
+describe('rms and analyzeFrame', () => {
+  it('rms of a 0.5-amplitude sine is ~0.354, silence is 0', () => {
+    expect(rms(sine(440, 0.5))).toBeCloseTo(0.5 / Math.SQRT2, 2)
+    expect(rms(new Float32Array(N))).toBe(0)
+  })
+  it('analyzeFrame returns loudness + pitch together', () => {
+    const a = analyzeFrame(sine(440), SR)
+    expect(a.rms).toBeCloseTo(0.5 / Math.SQRT2, 2)
+    expect(a.midi).toBe(69)
+    const s = analyzeFrame(new Float32Array(N), SR)
+    expect(s).toEqual({ rms: 0, hz: null, midi: null })
   })
 })

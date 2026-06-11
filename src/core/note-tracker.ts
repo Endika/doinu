@@ -6,8 +6,10 @@ import { InputEventType, type InputEvent } from './events'
  * `stableFrames` consecutive frames before it commits — this debounces the
  * flicker and brief octave glitches inherent to real-time pitch detection.
  *
- * Pure and synchronous: the mic adapter calls `feed(midi, time)` once per audio
- * frame and emits whatever events come back.
+ * Pure and synchronous: the mic adapter calls `feed(midi, time, onset)` once per
+ * audio frame and emits whatever events come back. `onset` (an amplitude attack)
+ * re-triggers the SAME note, so a re-struck note counts again even with no clean
+ * silence between strikes.
  */
 export class NoteTracker {
   private current: number | null = null
@@ -16,11 +18,18 @@ export class NoteTracker {
 
   constructor(private readonly stableFrames = 3) {}
 
-  feed(midi: number | null, time: number): InputEvent[] {
-    // Same as what is already sounding → nothing to do; reset any pending change.
+  feed(midi: number | null, time: number, onset = false): InputEvent[] {
+    // Same pitch already sounding: normally nothing to do — but a fresh attack on
+    // that same pitch is a repeated note, so re-trigger it (off then on).
     if (midi === this.current) {
       this.candidate = null
       this.count = 0
+      if (onset && midi !== null) {
+        return [
+          { note: midi, type: InputEventType.Off, time },
+          { note: midi, type: InputEventType.On, time },
+        ]
+      }
       return []
     }
 
