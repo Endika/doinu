@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest'
-import { PATH, PATH_LESSONS } from '../src/content/path'
+import { PATH, PATH_LESSONS, LessonKind } from '../src/content/path'
 
 describe('learning path content', () => {
   it('has all six units of the ladder', () => {
@@ -41,6 +41,7 @@ describe('learning path content', () => {
     // After M2 every chord and two-hand lesson is playable; the remaining future
     // work (more keys, reading) stays as milestone-3 "soon" nodes.
     expect(PATH_LESSONS.some(l => l.milestone === 3)).toBe(true)
-    expect(PATH_LESSONS.filter(l => l.milestone === 3).every(l => l.kind === 'melody' || l.kind === 'reading')).toBe(true)
+    // After M3's "more keys" ships, the only future work left is the reading unit.
+    expect(PATH_LESSONS.filter(l => l.milestone === 3).every(l => l.kind === LessonKind.Reading)).toBe(true)
   })
 })
