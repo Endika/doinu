@@ -1,5 +1,12 @@
 # Changelog
 
+## [0.10.0](https://github.com/Endika/doinu/compare/v0.9.0...v0.10.0) (2026-06-11)
+
+
+### Features
+
+* **content:** add famous public-domain songs ([b881e5a](https://github.com/Endika/doinu/commit/b881e5a3db972ac9df6a7d3549cba7559a841d43))
+
 ## [0.9.0](https://github.com/Endika/doinu/compare/v0.8.0...v0.9.0) (2026-06-11)
 
 
