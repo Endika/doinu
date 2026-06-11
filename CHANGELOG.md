@@ -1,5 +1,12 @@
 # Changelog
 
+## [0.5.1](https://github.com/Endika/doinu/compare/v0.5.0...v0.5.1) (2026-06-11)
+
+
+### Refactor
+
+* convert string-literal unions to string enums ([56e4a41](https://github.com/Endika/doinu/commit/56e4a4128cf8482a1ba381dd29cbb72e2221e8ec))
+
 ## [0.5.0](https://github.com/Endika/doinu/compare/v0.4.0...v0.5.0) (2026-06-11)
 
 
