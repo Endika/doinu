@@ -11,13 +11,13 @@ describe('learning path content', () => {
     expect(new Set(ids).size).toBe(ids.length)
   })
 
-  it('every milestone-1 lesson is playable (melody notes, chords, or two-hand content)', () => {
+  it('every milestone-1 lesson is playable (melody/reading notes, chords, or two-hand content)', () => {
     const m1 = PATH_LESSONS.filter(l => l.milestone === 1)
     expect(m1.length).toBeGreaterThan(0)
     for (const l of m1) {
-      if (l.kind === 'melody') expect(l.notes && l.notes.length > 0).toBe(true)
-      else if (l.kind === 'chord') expect(l.chords && l.chords.length > 0).toBe(true)
-      else if (l.kind === 'twohands') expect((l.right?.length ?? 0) + (l.left?.length ?? 0)).toBeGreaterThan(0)
+      if (l.kind === LessonKind.Melody || l.kind === LessonKind.Reading) expect(l.notes && l.notes.length > 0).toBe(true)
+      else if (l.kind === LessonKind.Chord) expect(l.chords && l.chords.length > 0).toBe(true)
+      else if (l.kind === LessonKind.TwoHands) expect((l.right?.length ?? 0) + (l.left?.length ?? 0)).toBeGreaterThan(0)
       else throw new Error(`milestone-1 lesson ${l.id} has non-playable kind ${l.kind}`)
     }
   })
@@ -37,11 +37,14 @@ describe('learning path content', () => {
     expect(chordCount).toBeGreaterThanOrEqual(2)
   })
 
-  it('keeps a future milestone present as data (the visible-but-locked roadmap)', () => {
-    // After M2 every chord and two-hand lesson is playable; the remaining future
-    // work (more keys, reading) stays as milestone-3 "soon" nodes.
-    expect(PATH_LESSONS.some(l => l.milestone === 3)).toBe(true)
-    // After M3's "more keys" ships, the only future work left is the reading unit.
-    expect(PATH_LESSONS.filter(l => l.milestone === 3).every(l => l.kind === LessonKind.Reading)).toBe(true)
+  it('has the whole ladder playable now (every lesson is milestone 1)', () => {
+    // M3 (more keys + reading) shipped: the full six-unit journey is buildable.
+    expect(PATH_LESSONS.every(l => l.milestone === 1)).toBe(true)
+  })
+
+  it('ships reading lessons, each with a note bank to read', () => {
+    const reading = PATH_LESSONS.filter(l => l.kind === LessonKind.Reading)
+    expect(reading.length).toBeGreaterThanOrEqual(1)
+    for (const l of reading) expect(l.notes && l.notes.length > 0).toBe(true)
   })
 })
