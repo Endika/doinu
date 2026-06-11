@@ -1,5 +1,12 @@
 # Changelog
 
+## [0.10.1](https://github.com/Endika/doinu/compare/v0.10.0...v0.10.1) (2026-06-11)
+
+
+### Bug Fixes
+
+* **ui:** single-scroll, bigger songs/path/progress panels ([7d788f1](https://github.com/Endika/doinu/commit/7d788f10917f939a87ef5db4185dbaf8f3a70a27))
+
 ## [0.10.0](https://github.com/Endika/doinu/compare/v0.9.0...v0.10.0) (2026-06-11)
 
 
