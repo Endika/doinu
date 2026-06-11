@@ -1,5 +1,12 @@
 # Changelog
 
+## [0.11.1](https://github.com/Endika/doinu/compare/v0.11.0...v0.11.1) (2026-06-11)
+
+
+### Chores
+
+* **mic:** spike — YIN pitch detection + note tracker + adapter prototype ([d253716](https://github.com/Endika/doinu/commit/d253716cfbaf3af49f23f5a1db04b0c978dfb347))
+
 ## [0.11.0](https://github.com/Endika/doinu/compare/v0.10.2...v0.11.0) (2026-06-11)
 
 
