@@ -258,15 +258,41 @@
       #path.hidden {
         display: none;
       }
+      /* Fill most of the screen as a single flex column: the title/sub stay put,
+         only the inner list scrolls (no nested double-scroll), and it is a touch
+         bigger than the start-menu card. */
       #songs .menu-card,
       #progress .menu-card,
       #path .menu-card {
-        max-height: 86vh;
+        display: flex;
+        flex-direction: column;
+        align-items: stretch;
+        gap: 0.55rem;
+        width: min(94vw, 30rem);
+        height: 92vh;
+        max-height: 92vh;
+        padding: 1.1rem 1.1rem 0.9rem;
+        box-sizing: border-box;
+      }
+      #songs .menu-title,
+      #progress .menu-title,
+      #path .menu-title,
+      #songs .menu-sub,
+      #progress .menu-sub,
+      #path .menu-sub {
+        flex: 0 0 auto;
+        text-align: center;
+      }
+      #songs-back,
+      #progress-back,
+      #path-back {
+        flex: 0 0 auto;
       }
       .progress-content {
         width: 100%;
+        flex: 1 1 auto;
+        min-height: 0;
         overflow-y: auto;
-        max-height: 62vh;
         text-align: left;
         color: var(--ink);
         font-size: 0.95rem;
@@ -286,8 +312,9 @@
         background: #6d5dfc;
       }
       #song-list {
+        flex: 1 1 auto;
+        min-height: 0;
         overflow-y: auto;
-        max-height: 62vh;
         padding-right: 0.25rem;
         gap: 0.6rem;
       }
@@ -348,8 +375,9 @@
       }
       /* Learning path: a vertical journey of units, each a group of lesson nodes. */
       #path-list {
+        flex: 1 1 auto;
+        min-height: 0;
         overflow-y: auto;
-        max-height: 64vh;
         padding-right: 0.25rem;
         gap: 0.7rem;
       }
