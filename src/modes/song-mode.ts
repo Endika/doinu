@@ -13,6 +13,15 @@ export function songHands(song: Song): HandSelection[] {
 }
 
 /**
+ * Hand options playable on the current input. A monophonic source (the mic)
+ * can't play 'both' (two simultaneous lines); single-hand R/L stay playable.
+ */
+export function availableHands(song: Song, polyphonic: boolean): HandSelection[] {
+  const hands = songHands(song)
+  return polyphonic ? hands : hands.filter(h => h !== HandSelection.Both)
+}
+
+/**
  * Turns a `Song` into a playable `Chart` for the chosen hand(s). The right hand
  * is sequential (start times accumulated from durations); the left hand carries
  * explicit timing so the hands line up. Beats are converted to ms via the bpm.

@@ -1,6 +1,7 @@
 import { InputSource, type InputAdapter, type Capabilities } from '../core/input-adapter'
 import { InputEventType, type InputEvent } from '../core/events'
 import { MidiInputAdapter } from '../core/midi-adapter'
+import { MicInputAdapter } from '../core/mic-adapter'
 import { perfClock, offsetClock, PausableClock, type Clock } from '../core/clock'
 import { Engine } from '../engine/engine'
 import type { Summary } from '../engine/scoring'
@@ -19,7 +20,7 @@ import { Synth } from '../audio/synth'
 import { CURRICULUM, type Exercise } from '../content/curriculum'
 import { SONGS, type Song } from '../content/songs'
 import { STUDIES } from '../content/studies'
-import { SongMode, songHands, HandSelection } from '../modes/song-mode'
+import { SongMode, availableHands, HandSelection } from '../modes/song-mode'
 import {
   parseMidi,
   chartMode,
@@ -31,7 +32,7 @@ import { MetricsStore } from '../progress/metrics-store'
 import { buildMasteryMap, MasteryState, type MasteryEntry } from '../progress/mastery'
 import { buildProgressReport, renderProgressReport } from '../progress/progress-view'
 import { PATH, PATH_LESSONS, LessonKind, type PathLesson } from '../content/path'
-import { buildPathProgress, PathLessonState } from '../progress/path-progress'
+import { buildPathProgress, lessonNeedsPolyphony, PathLessonState } from '../progress/path-progress'
 import { CompositionRecorder, type RecordedNote } from '../modes/composition-recorder'
 import { CompositionStore, compositionChart, type Composition } from '../progress/composition-store'
 import { resolveLocale, createI18n, Locale, type MessageKey } from '../i18n'
@@ -94,34 +95,22 @@ export interface Env {
   hasWebMidi: boolean
 }
 
-export interface SelectedAdapter extends InputAdapter {
-  statusKey?: string
-}
+// The input adapter the app drives. (Kept as a named alias for readability at
+// the call sites that select and thread the active adapter around.)
+export type SelectedAdapter = InputAdapter
 
-// Idle adapter used when there is no real input source yet.
-// Fase 1 ships MIDI only; microphone input lands in Fase 2.
-class NullAdapter implements SelectedAdapter {
-  capabilities: Capabilities = { polyphonic: false, source: InputSource.Fake }
-  statusKey = 'input.noMidiMicLater'
-  // eslint-disable-next-line @typescript-eslint/no-unused-vars
-  onEvent(_cb: (e: InputEvent) => void): void {
-    // no-op: a null adapter never produces events.
-  }
-  async start(): Promise<void> {
-    // no-op
-  }
-  stop(): void {
-    // no-op
-  }
-}
+export type InputPref = 'midi' | 'mic'
 
 /**
- * Pure adapter selection: given the detected environment, pick the input
- * adapter. Kept free of DOM / `navigator` so it is safe in a node test.
+ * Pure adapter selection. A stored preference wins; otherwise auto: a MIDI
+ * keyboard when Web MIDI exists, else the microphone (the iPad / no-MIDI path).
+ * Kept free of DOM so it is safe in a node test — constructing MicInputAdapter
+ * touches no DOM; only its start() does.
  */
-export function selectAdapter(env: Env): SelectedAdapter {
-  if (env.hasWebMidi) return new MidiInputAdapter()
-  return new NullAdapter()
+export function selectAdapter(env: Env, pref?: InputPref | null): SelectedAdapter {
+  if (pref === 'mic') return new MicInputAdapter()
+  if (pref === 'midi') return env.hasWebMidi ? new MidiInputAdapter() : new MicInputAdapter()
+  return env.hasWebMidi ? new MidiInputAdapter() : new MicInputAdapter()
 }
 
 /**
@@ -134,16 +123,6 @@ export function pickCurrentExerciseId(map: MasteryEntry[]): string {
   const inProgress = map.find(e => e.state === MasteryState.InProgress)
   if (inProgress) return inProgress.exerciseId
   return map[map.length - 1].exerciseId
-}
-
-// Maps an adapter status key onto a translatable message key.
-const STATUS_MESSAGE_KEYS: Record<string, MessageKey> = {
-  'input.noMidiMicLater': 'st.noMidi',
-}
-
-function statusMessage(key: string): string {
-  const messageKey = STATUS_MESSAGE_KEYS[key]
-  return messageKey ? t(messageKey) : key
 }
 
 function findExercise(id: string): Exercise {
@@ -388,8 +367,11 @@ export function bootstrap(): void {
     obs.observe(banner, { childList: true, characterData: true, subtree: true })
   }
 
+  const INPUT_PREF_KEY = 'doinu.input'
   const env: Env = { hasWebMidi: 'requestMIDIAccess' in navigator }
-  const selected = selectAdapter(env)
+  const inputPref = window.localStorage.getItem(INPUT_PREF_KEY) as InputPref | null
+  const selected = selectAdapter(env, inputPref)
+  const usingMic = selected.capabilities.source === InputSource.Mic
 
   // Audio feedback: a single synth, driven by the RAW selected adapter so every
   // key press sounds. The engine subscribes separately via its own wrapped
@@ -397,17 +379,51 @@ export function bootstrap(): void {
   const synth = new Synth()
   selected.onEvent(e => (e.type === InputEventType.On ? synth.noteOn(e.note) : synth.noteOff(e.note)))
 
-  // Start the input adapter ONCE here so EVERY activity (echo, free play, menu)
-  // receives MIDI — not just the melody/scale flows whose engine used to be the
-  // only caller of start(). Without this, echo's "your turn" got no MIDI events.
-  void selected.start()
+  // MIDI starts immediately so every activity receives events. The microphone
+  // needs a user gesture (getUserMedia + a suspended AudioContext), so it stays
+  // inert until the child taps "Enable microphone".
+  let noInput = false
+  if (usingMic) {
+    noInput = true
+    if (menuStatus) menuStatus.textContent = t('st.micTapToEnable')
+  } else {
+    void selected.start()
+  }
 
-  // No real input source: show the menu but keep buttons inert and surface the
-  // status message on it. Do not crash.
-  const noInput = Boolean(selected.statusKey)
-  if (noInput && selected.statusKey) {
-    if (menuStatus) menuStatus.textContent = statusMessage(selected.statusKey)
-    if (status) status.textContent = ''
+  // Mic enable button (shown only on the microphone path).
+  const micEnableBtn = document.getElementById('mic-enable')
+  if (micEnableBtn) {
+    micEnableBtn.classList.toggle('hidden', !usingMic)
+    micEnableBtn.addEventListener('click', () => {
+      synth.resume()
+      selected
+        .start()
+        .then(() => {
+          noInput = false
+          micEnableBtn.classList.add('hidden')
+          if (menuStatus) menuStatus.textContent = t('st.micListening')
+        })
+        .catch(() => {
+          if (menuStatus) menuStatus.textContent = t('st.micDenied')
+        })
+    })
+  }
+
+  // Manual MIDI <-> microphone toggle, shown only when Web MIDI exists (a real
+  // choice). Switching is a rare, deliberate action → persist + reload, which
+  // avoids re-wiring the live listeners.
+  const inputToggle = document.getElementById('input-toggle')
+  if (inputToggle) {
+    if (env.hasWebMidi) {
+      inputToggle.textContent = usingMic ? t('input.useMidi') : t('input.useMic')
+      inputToggle.classList.remove('hidden')
+      inputToggle.addEventListener('click', () => {
+        window.localStorage.setItem(INPUT_PREF_KEY, usingMic ? 'midi' : 'mic')
+        window.location.reload()
+      })
+    } else {
+      inputToggle.classList.add('hidden')
+    }
   }
 
   const store = new MetricsStore(window.localStorage)
@@ -1247,12 +1263,13 @@ export function bootstrap(): void {
         b.addEventListener('click', () => playSong(song, sel))
         handsRow.appendChild(b)
       }
-      if (songHands(song).length === 1) {
+      const hands = availableHands(song, selected.capabilities.polyphonic)
+      if (hands.length === 1) {
         addHand(t('hand.play'), HandSelection.Right)
       } else {
-        addHand(t('hand.right'), HandSelection.Right)
-        addHand(t('hand.left'), HandSelection.Left)
-        addHand(t('hand.both'), HandSelection.Both)
+        if (hands.includes(HandSelection.Right)) addHand(t('hand.right'), HandSelection.Right)
+        if (hands.includes(HandSelection.Left)) addHand(t('hand.left'), HandSelection.Left)
+        if (hands.includes(HandSelection.Both)) addHand(t('hand.both'), HandSelection.Both)
       }
       card.appendChild(handsRow)
       list.appendChild(card)
@@ -1434,15 +1451,19 @@ export function bootstrap(): void {
 
       for (const lesson of unit.lessons) {
         const st = stateOf(lesson.id)
-        const launchable = st === PathLessonState.Current || st === PathLessonState.Passed || st === PathLessonState.Mastered
+        // A monophonic input (mic) cannot play chords / two hands — mark them
+        // MIDI-only and non-launchable so wait mode never hangs on a 2nd note.
+        const midiOnly = !selected.capabilities.polyphonic && lessonNeedsPolyphony(lesson)
+        const launchable =
+          !midiOnly && (st === PathLessonState.Current || st === PathLessonState.Passed || st === PathLessonState.Mastered)
         const node = document.createElement('button')
         node.type = 'button'
-        node.className = `path-node path-node--${st}`
+        node.className = `path-node path-node--${midiOnly ? 'locked' : st}`
         node.disabled = !launchable
 
         const icon = document.createElement('span')
         icon.className = 'path-node-icon'
-        icon.textContent = PATH_ICON[st]
+        icon.textContent = midiOnly ? '🎹' : PATH_ICON[st]
         node.appendChild(icon)
 
         const text = document.createElement('span')
@@ -1452,7 +1473,7 @@ export function bootstrap(): void {
         title.textContent = lesson.title
         const concept = document.createElement('span')
         concept.className = 'path-node-concept'
-        concept.textContent = st === 'soon' ? t('path.soon') : lesson.concept
+        concept.textContent = midiOnly ? t('path.midiOnly') : st === PathLessonState.Soon ? t('path.soon') : lesson.concept
         text.appendChild(title)
         text.appendChild(concept)
         node.appendChild(text)
