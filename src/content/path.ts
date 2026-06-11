@@ -120,8 +120,8 @@ export const PATH: PathUnit[] = [
     title: '🗝️ More keys',
     concept: 'New home notes',
     lessons: [
-      { id: 'u5-gmajor', title: 'G major', concept: 'A scale with one sharp', kind: LessonKind.Melody, milestone: 3, bpm: 72, passAccuracy: 0.75, notes: scale(G4) },
-      { id: 'u5-fmajor', title: 'F major', concept: 'A scale with one flat', kind: LessonKind.Melody, milestone: 3, bpm: 72, passAccuracy: 0.75, notes: scale(F4) },
+      { id: 'u5-gmajor', title: 'G major', concept: 'A scale with one sharp', kind: LessonKind.Melody, milestone: 1, bpm: 72, passAccuracy: 0.75, notes: scale(G4) },
+      { id: 'u5-fmajor', title: 'F major', concept: 'A scale with one flat', kind: LessonKind.Melody, milestone: 1, bpm: 72, passAccuracy: 0.75, notes: scale(F4) },
     ],
   },
   {
