@@ -1,5 +1,12 @@
 # Changelog
 
+## [0.7.0](https://github.com/Endika/doinu/compare/v0.6.0...v0.7.0) (2026-06-11)
+
+
+### Features
+
+* **path:** M3 reading — lightweight staff-reading lessons ([bf65431](https://github.com/Endika/doinu/commit/bf654313d1959b767ecd1bb1fa06757bf41f2520))
+
 ## [0.6.0](https://github.com/Endika/doinu/compare/v0.5.2...v0.6.0) (2026-06-11)
 
 
