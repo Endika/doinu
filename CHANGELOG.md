@@ -1,5 +1,12 @@
 # Changelog
 
+## [0.12.0](https://github.com/Endika/doinu/compare/v0.11.1...v0.12.0) (2026-06-11)
+
+
+### Features
+
+* **input:** microphone input for iPad — selection, enable UX, MIDI toggle, polyphonic gating ([1f5648f](https://github.com/Endika/doinu/commit/1f5648f880031e8af1a9335890d0be0d428f31a2))
+
 ## [0.11.1](https://github.com/Endika/doinu/compare/v0.11.0...v0.11.1) (2026-06-11)
 
 
