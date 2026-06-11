@@ -1,5 +1,12 @@
 # Changelog
 
+## [0.10.2](https://github.com/Endika/doinu/compare/v0.10.1...v0.10.2) (2026-06-11)
+
+
+### Bug Fixes
+
+* **ui:** remove stray horizontal scrollbar in songs/path lists ([818291c](https://github.com/Endika/doinu/commit/818291c43bb7736e6d1a061c6310e3a89975953b))
+
 ## [0.10.1](https://github.com/Endika/doinu/compare/v0.10.0...v0.10.1) (2026-06-11)
 
 
