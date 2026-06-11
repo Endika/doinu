@@ -1,5 +1,12 @@
 # Changelog
 
+## [0.11.0](https://github.com/Endika/doinu/compare/v0.10.2...v0.11.0) (2026-06-11)
+
+
+### Features
+
+* **compose:** record, name and save your own melody, then practise it ([1650a8e](https://github.com/Endika/doinu/commit/1650a8e1b98f66d334d0650746a22e7a58cc2c2b))
+
 ## [0.10.2](https://github.com/Endika/doinu/compare/v0.10.1...v0.10.2) (2026-06-11)
 
 
