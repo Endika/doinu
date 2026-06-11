@@ -6,7 +6,7 @@
 //
 // Pitch reference: middle C = 60. C major unless noted.
 
-import { C4, D4, E4, F4, G4, A4, B4, Bb4, C5, G3 } from '../core/pitch'
+import { C4, D4, E4, F4, G4, A4, B4, Bb4, C5, A3, B3, Ds4, Gs4, G3 } from '../core/pitch'
 
 /** A right-hand melody note: pitch + duration in beats (sequential). */
 export interface MelodyNote {
@@ -33,6 +33,8 @@ export interface Song {
 // Short local aliases over the single source of truth (core/pitch). C5/G3 come
 // straight from pitch; the left-hand roots use plain arithmetic (e.g. C - 12).
 const C = C4, D = D4, E = E4, F = F4, G = G4, A = A4, B = B4, Bb = Bb4
+// Chromatic notes used by the famous classical themes (Eb/D# = the same key).
+const Eb = Ds4, Ds = Ds4, Gs = Gs4
 
 export const SONGS: Song[] = [
   {
@@ -244,6 +246,66 @@ export const SONGS: Song[] = [
       { midi: C, dur: 1 }, { midi: C, dur: 1 }, { midi: D, dur: 1 }, { midi: E, dur: 1 },
       { midi: F, dur: 1 }, { midi: E, dur: 1 }, { midi: D, dur: 1 }, { midi: C, dur: 1 },
       { midi: B, dur: 1 }, { midi: G, dur: 1 }, { midi: A, dur: 1 }, { midi: B, dur: 1 }, { midi: C, dur: 2 },
+    ],
+  },
+  {
+    id: 'beethoven5',
+    title: "Beethoven's 5th 🎼",
+    bpm: 108,
+    right: [
+      { midi: G, dur: 0.5 }, { midi: G, dur: 0.5 }, { midi: G, dur: 0.5 }, { midi: Eb, dur: 2 },
+      { midi: F, dur: 0.5 }, { midi: F, dur: 0.5 }, { midi: F, dur: 0.5 }, { midi: D, dur: 2 },
+    ],
+  },
+  {
+    id: 'furelise',
+    title: 'Für Elise 🎹',
+    bpm: 100,
+    right: [
+      { midi: E, dur: 0.5 }, { midi: Ds, dur: 0.5 }, { midi: E, dur: 0.5 }, { midi: Ds, dur: 0.5 },
+      { midi: E, dur: 0.5 }, { midi: B3, dur: 0.5 }, { midi: D, dur: 0.5 }, { midi: C, dur: 0.5 }, { midi: A3, dur: 1 },
+      { midi: C, dur: 0.5 }, { midi: E, dur: 0.5 }, { midi: A, dur: 0.5 }, { midi: B, dur: 1 },
+      { midi: E, dur: 0.5 }, { midi: Gs, dur: 0.5 }, { midi: B, dur: 0.5 }, { midi: C5, dur: 1 },
+      { midi: E, dur: 0.5 }, { midi: Ds, dur: 0.5 }, { midi: E, dur: 0.5 }, { midi: Ds, dur: 0.5 },
+      { midi: E, dur: 0.5 }, { midi: B3, dur: 0.5 }, { midi: D, dur: 0.5 }, { midi: C, dur: 0.5 }, { midi: A3, dur: 1 },
+    ],
+  },
+  {
+    id: 'silentnight',
+    title: 'Silent Night 🌌',
+    bpm: 90,
+    right: [
+      { midi: G, dur: 1.5 }, { midi: A, dur: 0.5 }, { midi: G, dur: 1 }, { midi: E, dur: 3 },
+      { midi: G, dur: 1.5 }, { midi: A, dur: 0.5 }, { midi: G, dur: 1 }, { midi: E, dur: 3 },
+      { midi: D, dur: 2 }, { midi: D, dur: 1 }, { midi: B, dur: 3 },
+      { midi: C, dur: 2 }, { midi: C, dur: 1 }, { midi: G, dur: 3 },
+    ],
+  },
+  {
+    id: 'saints',
+    title: 'When the Saints 🎺',
+    bpm: 112,
+    right: [
+      { midi: C, dur: 1 }, { midi: E, dur: 1 }, { midi: F, dur: 1 }, { midi: G, dur: 3 },
+      { midi: C, dur: 1 }, { midi: E, dur: 1 }, { midi: F, dur: 1 }, { midi: G, dur: 3 },
+      { midi: C, dur: 1 }, { midi: E, dur: 1 }, { midi: F, dur: 1 }, { midi: G, dur: 2 },
+      { midi: E, dur: 1 }, { midi: C, dur: 1 }, { midi: E, dur: 1 }, { midi: D, dur: 2 },
+      { midi: E, dur: 1 }, { midi: E, dur: 1 }, { midi: D, dur: 1 }, { midi: C, dur: 2 },
+      { midi: C, dur: 1 }, { midi: E, dur: 1 }, { midi: G, dur: 2 },
+      { midi: G, dur: 1 }, { midi: F, dur: 1 }, { midi: E, dur: 1 }, { midi: C, dur: 2 },
+    ],
+  },
+  {
+    id: 'susanna',
+    title: 'Oh! Susanna 🪕',
+    bpm: 110,
+    right: [
+      { midi: C, dur: 0.5 }, { midi: D, dur: 0.5 }, { midi: E, dur: 1 }, { midi: G, dur: 1 }, { midi: G, dur: 1 },
+      { midi: A, dur: 1 }, { midi: G, dur: 1 }, { midi: E, dur: 1 }, { midi: C, dur: 1 }, { midi: D, dur: 1 },
+      { midi: E, dur: 1 }, { midi: E, dur: 1 }, { midi: D, dur: 1 }, { midi: C, dur: 1 }, { midi: D, dur: 2 },
+      { midi: C, dur: 0.5 }, { midi: D, dur: 0.5 }, { midi: E, dur: 1 }, { midi: G, dur: 1 }, { midi: G, dur: 1 },
+      { midi: A, dur: 1 }, { midi: G, dur: 1 }, { midi: E, dur: 1 }, { midi: C, dur: 1 }, { midi: D, dur: 1 },
+      { midi: E, dur: 1 }, { midi: E, dur: 1 }, { midi: D, dur: 1 }, { midi: D, dur: 1 }, { midi: C, dur: 2 },
     ],
   },
 ]
