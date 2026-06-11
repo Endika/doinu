@@ -1262,10 +1262,16 @@ export function bootstrap(): void {
   const pathList = document.getElementById('path-list')
   const pathBack = document.getElementById('path-back')
 
-  const lessonMode = (lesson: PathLesson): Mode =>
-    lesson.kind === 'chord'
-      ? new ChordMode({ id: lesson.id, title: lesson.title, bpm: lesson.bpm, chords: lesson.chords ?? [], passAccuracy: lesson.passAccuracy })
-      : new MelodyMode({ id: lesson.id, title: lesson.title, bpm: lesson.bpm, notes: lesson.notes ?? [], passAccuracy: lesson.passAccuracy })
+  const lessonMode = (lesson: PathLesson): Mode => {
+    if (lesson.kind === 'chord') {
+      return new ChordMode({ id: lesson.id, title: lesson.title, bpm: lesson.bpm, chords: lesson.chords ?? [], passAccuracy: lesson.passAccuracy })
+    }
+    if (lesson.kind === 'twohands') {
+      const song: Song = { id: lesson.id, title: lesson.title, bpm: lesson.bpm, right: lesson.right ?? [], left: lesson.left }
+      return new SongMode(song, 'both')
+    }
+    return new MelodyMode({ id: lesson.id, title: lesson.title, bpm: lesson.bpm, notes: lesson.notes ?? [], passAccuracy: lesson.passAccuracy })
+  }
 
   const PATH_ICON: Record<PathLessonState, string> = {
     current: '▶', passed: '✓', mastered: '⭐', locked: '🔒', soon: '🔒',
