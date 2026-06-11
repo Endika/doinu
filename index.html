@@ -240,9 +240,10 @@
       .menu-btn[data-activity='import'] { background: #c08bff; }
       .menu-btn[data-activity='practice'] { background: #7c83ff; }
       .menu-btn[data-activity='progress'] { background: #ffb454; }
-      /* Songs / Progress overlays: reuse the menu look; scrollable content. */
+      /* Songs / Progress / Path overlays: reuse the menu look; scrollable content. */
       #songs,
-      #progress {
+      #progress,
+      #path {
         position: fixed;
         inset: 0;
         z-index: 30;
@@ -253,11 +254,13 @@
         background: var(--sky);
       }
       #songs.hidden,
-      #progress.hidden {
+      #progress.hidden,
+      #path.hidden {
         display: none;
       }
       #songs .menu-card,
-      #progress .menu-card {
+      #progress .menu-card,
+      #path .menu-card {
         max-height: 86vh;
       }
       .progress-content {
@@ -335,6 +338,67 @@
         margin-top: 0.6rem;
         background: #6d5dfc;
       }
+      /* Learning path: a vertical journey of units, each a group of lesson nodes. */
+      #path-list {
+        overflow-y: auto;
+        max-height: 64vh;
+        padding-right: 0.25rem;
+        gap: 0.7rem;
+      }
+      .path-unit {
+        width: 100%;
+        box-sizing: border-box;
+        display: flex;
+        flex-direction: column;
+        gap: 0.45rem;
+        padding: 0.55rem 0.7rem 0.7rem;
+        border-radius: 1rem;
+        background: rgba(124, 92, 255, 0.16);
+      }
+      .path-unit-title {
+        text-align: left;
+        padding-left: 0.15rem;
+        font-size: 1.02rem;
+        font-weight: 800;
+        color: var(--ink);
+      }
+      .path-node {
+        width: 100%;
+        box-sizing: border-box;
+        display: flex;
+        align-items: center;
+        gap: 0.55rem;
+        padding: 0.6rem 0.7rem;
+        border: none;
+        border-radius: 0.8rem;
+        text-align: left;
+        font-family: var(--font);
+        cursor: pointer;
+        color: #fff;
+        box-shadow: 0 4px 0 rgba(0, 0, 0, 0.14);
+        transition: transform 0.1s ease, box-shadow 0.1s ease;
+        background: #7c83ff;
+      }
+      .path-node:active { transform: translateY(2px); box-shadow: 0 1px 0 rgba(0, 0, 0, 0.14); }
+      .path-node-icon { font-size: 1.2rem; flex: 0 0 auto; }
+      .path-node-text { display: flex; flex-direction: column; min-width: 0; }
+      .path-node-title { font-weight: 800; font-size: 0.98rem; }
+      .path-node-concept { font-weight: 600; font-size: 0.8rem; opacity: 0.92; }
+      .path-node--current { background: #ff7eb3; box-shadow: 0 4px 0 rgba(0, 0, 0, 0.18); }
+      .path-node--passed { background: #4cd4a0; }
+      .path-node--mastered { background: #ffb454; }
+      .path-node--locked,
+      .path-node--soon {
+        background: rgba(124, 92, 255, 0.28);
+        color: rgba(40, 20, 90, 0.6);
+        box-shadow: none;
+        cursor: not-allowed;
+      }
+      #path-back {
+        margin-top: 0.6rem;
+        background: #6d5dfc;
+      }
+      .menu-btn[data-activity='path'] { background: #8ad4ff; }
       .menu-btn[data-activity='echo'] { background: #4fc3f7; }
       .menu-btn[data-activity='c-major-up'] { background: #ffa14a; }
       .menu-btn[data-activity='c-major-updown'] { background: #b07bff; }
@@ -385,6 +449,7 @@
         <h1 class="menu-title">🎹 Doinu</h1>
         <p class="menu-sub" data-i18n="menu.sub">¡A jugar! 🎶</p>
         <div class="menu-list">
+          <button class="menu-btn" type="button" data-activity="path" data-i18n="act.path">🗺️ Path</button>
           <button class="menu-btn" type="button" data-activity="melody" data-i18n="act.melody">🎵 Melody</button>
           <button class="menu-btn" type="button" data-activity="songs" data-i18n="act.songs">🎶 Songs</button>
           <button class="menu-btn" type="button" data-activity="import" data-i18n="act.import">📂 Load MIDI</button>
@@ -409,6 +474,14 @@
         <p class="menu-sub" data-i18n="songs.pick">Pick a song 🎹</p>
         <div id="song-list" class="menu-list"></div>
         <button id="songs-back" class="menu-btn" type="button" data-i18n="nav.back">← Menu</button>
+      </div>
+    </div>
+    <div id="path" class="hidden">
+      <div class="menu-card">
+        <h1 class="menu-title" data-i18n="path.title">🗺️ Learning path</h1>
+        <p class="menu-sub" data-i18n="path.sub">Learn step by step 🎹</p>
+        <div id="path-list" class="menu-list"></div>
+        <button id="path-back" class="menu-btn" type="button" data-i18n="nav.back">← Menu</button>
       </div>
     </div>
     <div id="progress" class="hidden">
