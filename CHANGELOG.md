@@ -1,5 +1,12 @@
 # Changelog
 
+## [0.4.0](https://github.com/Endika/doinu/compare/v0.3.0...v0.4.0) (2026-06-11)
+
+
+### Features
+
+* **path:** add learning-path skill tree with chords and black keys ([6989326](https://github.com/Endika/doinu/commit/6989326bf45f22bb29e708a178228bccd0e741ed))
+
 ## [0.3.0](https://github.com/Endika/doinu/compare/v0.2.0...v0.3.0) (2026-06-11)
 
 
