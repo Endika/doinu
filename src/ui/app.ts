@@ -6,6 +6,7 @@ import { Engine } from '../engine/engine'
 import type { Summary } from '../engine/scoring'
 import { Renderer, leadInMs, expectedNotesAt } from '../render/renderer'
 import { Keyboard } from '../render/keyboard'
+import { Staff } from '../render/staff'
 import { MelodyMode } from '../modes/melody-mode'
 import { ChordMode } from '../modes/chord-mode'
 import { ScaleMode, SCALES } from '../modes/scale-mode'
@@ -1287,9 +1288,93 @@ export function bootstrap(): void {
   }
   const hidePath = (): void => pathOverlay?.classList.add('hidden')
 
+  // Reading lesson: show ONE note on a treble staff (no keyboard glow — the child
+  // reads the position) and have them play it on the MIDI keyboard. Reuses the
+  // note-find game for the logic; one finite set, then back to the path map.
+  const startReadingLesson = (lesson: PathLesson): void => {
+    synth.resume()
+    hidePath()
+    const bank = lesson.notes && lesson.notes.length > 0 ? lesson.notes : [60, 62, 64]
+    const game = new NoteFindGame(() => bank[Math.floor(Math.random() * bank.length)], bank.length)
+    let running = true
+    let findSum = 0
+    let shownAt = performance.now()
+    const activeNotes = new Set<number>()
+
+    sizeCanvas(deps.stageCanvas)
+    sizeCanvas(deps.keysCanvas)
+    const stageCtx = deps.stageCanvas?.getContext('2d') ?? null
+    const keysCtx = deps.keysCanvas?.getContext('2d') ?? null
+    const staff = new Staff(stageCtx)
+    const keyboard = new Keyboard(keysCtx)
+
+    if (status) status.textContent = t('st.read')
+
+    deps.selected.onEvent(e => {
+      if (!running) return
+      if (e.type === InputEventType.On) {
+        activeNotes.add(e.note)
+        if (game.press(e.note) === NoteFindPressResult.Correct) {
+          findSum += performance.now() - shownAt
+          if (game.done) {
+            finish()
+          } else {
+            shownAt = performance.now()
+            if (status) status.textContent = t('st.yes')
+          }
+        }
+      } else {
+        activeNotes.delete(e.note)
+      }
+    })
+
+    let rafId = 0
+    const loop = (): void => {
+      if (!running) return
+      staff.draw(game.target)
+      keyboard.draw(activeNotes) // NO expected glow — read the staff, not the key
+      rafId = requestAnimationFrame(loop)
+    }
+
+    function finish(): void {
+      if (!running) return
+      const accuracy = game.accuracy()
+      const meanFindMs = game.hits > 0 ? findSum / game.hits : 0
+      store.record({
+        exerciseId: `path:${lesson.id}`,
+        timestamp: Date.now(),
+        summary: { accuracy, meanTimingDevMs: 0, meanFindMs, tempoBpm: 0 },
+      })
+      refreshReport()
+      if (status) {
+        const pct = Math.round(accuracy * 100)
+        status.textContent = pct > 0 ? `${praise(pct)} · ${Math.round(meanFindMs)}ms` : praise(pct)
+      }
+      window.setTimeout(() => exit(), 2200)
+    }
+
+    const exit = (): void => {
+      if (!running) return
+      running = false
+      cancelAnimationFrame(rafId)
+      if (stageCtx && deps.stageCanvas) stageCtx.clearRect(0, 0, deps.stageCanvas.width, deps.stageCanvas.height)
+      backBtn?.removeEventListener('click', exit)
+      backBtn?.classList.add('hidden')
+      if (status) status.textContent = ''
+      showPath()
+    }
+    backBtn?.addEventListener('click', exit)
+    backBtn?.classList.remove('hidden')
+    rafId = requestAnimationFrame(loop)
+  }
+
   // Play one path lesson in wait mode; on completion record it under path:<id>,
   // then return to the (re-rendered) path map so unlocks show immediately.
   const startLesson = (lesson: PathLesson): void => {
+    if (lesson.kind === LessonKind.Reading) {
+      startReadingLesson(lesson)
+      return
+    }
     synth.resume()
     hidePath()
     let alive = true

@@ -129,9 +129,9 @@ export const PATH: PathUnit[] = [
     title: '📖 Reading music',
     concept: 'Notes on the staff, no colors',
     lessons: [
-      { id: 'u6-staff', title: 'The staff', concept: 'Where notes live', kind: LessonKind.Reading, milestone: 3, bpm: 60, passAccuracy: 0.7 },
-      { id: 'u6-read-note', title: 'Read a note', concept: 'Name what you see', kind: LessonKind.Reading, milestone: 3, bpm: 60, passAccuracy: 0.7 },
-      { id: 'u6-read-melody', title: 'Read a melody', concept: 'Play without colors', kind: LessonKind.Reading, milestone: 3, bpm: 60, passAccuracy: 0.7 },
+      { id: 'u6-staff', title: 'The staff', concept: 'Where notes live', kind: LessonKind.Reading, milestone: 1, bpm: 60, passAccuracy: 0.7, notes: [C4, D4, E4] },
+      { id: 'u6-read-note', title: 'Read a note', concept: 'Name what you see', kind: LessonKind.Reading, milestone: 1, bpm: 60, passAccuracy: 0.7, notes: [C4, D4, E4, F4, G4] },
+      { id: 'u6-read-melody', title: 'Read a melody', concept: 'Play without colors', kind: LessonKind.Reading, milestone: 1, bpm: 60, passAccuracy: 0.7, notes: scale(C4) },
     ],
   },
 ]
