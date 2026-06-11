@@ -1,5 +1,12 @@
 # Changelog
 
+## [0.13.0](https://github.com/Endika/doinu/compare/v0.12.0...v0.13.0) (2026-06-11)
+
+
+### Features
+
+* **playback:** 'wait for the right note' toggle (helps the iPad mic) ([ec43362](https://github.com/Endika/doinu/commit/ec433622094e78fcb7cdf1c9d93bc48d30ecadfc))
+
 ## [0.12.0](https://github.com/Endika/doinu/compare/v0.11.1...v0.12.0) (2026-06-11)
 
 
