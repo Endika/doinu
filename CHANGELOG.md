@@ -1,5 +1,12 @@
 # Changelog
 
+## [0.7.1](https://github.com/Endika/doinu/compare/v0.7.0...v0.7.1) (2026-06-11)
+
+
+### Chores
+
+* **deps-dev:** bump @types/node from 22.19.21 to 25.9.3 ([1c2077b](https://github.com/Endika/doinu/commit/1c2077b4bff7453ea382d52141b9b473404ae1cb))
+
 ## [0.7.0](https://github.com/Endika/doinu/compare/v0.6.0...v0.7.0) (2026-06-11)
 
 
