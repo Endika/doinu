@@ -50,12 +50,7 @@ jobs:
           gh api -X DELETE "repos/$REPO/git/refs/heads/$BRANCH" 2>/dev/null || true
           gh workflow run "$WORKFLOW" -R "$REPO" --ref main
 
-      # When a release is actually published, redeploy from main so the live
-      # build carries the bumped version. release-please's own version-bump
-      # commit is pushed by GITHUB_TOKEN and does NOT trigger the on:push deploy,
-      # so the site would otherwise stay one release behind.
-      - if: ${{ steps.release.outputs.release_created }}
-        env:
-          GH_TOKEN: ${{ secrets.RELEASE_PLEASE_TOKEN }}
-          REPO: ${{ github.repository }}
-        run: gh workflow run deploy.yml -R "$REPO" --ref main
+      # No explicit redeploy on release: the version-bump commit is merged with
+      # RELEASE_PLEASE_TOKEN (a PAT), so it triggers the on:push Deploy by itself
+      # with the bumped version. A second dispatched deploy only collided with
+      # that one and got cancelled by the Pages concurrency (the "red" runs).
