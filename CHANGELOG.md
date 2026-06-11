@@ -1,5 +1,12 @@
 # Changelog
 
+## [0.5.0](https://github.com/Endika/doinu/compare/v0.4.0...v0.5.0) (2026-06-11)
+
+
+### Features
+
+* **path:** M2 — playable F/G chords, chord changes, and two-hand lessons ([8b82ab2](https://github.com/Endika/doinu/commit/8b82ab2e39509489c5e62881a53fd20ac62b9256))
+
 ## [0.4.0](https://github.com/Endika/doinu/compare/v0.3.0...v0.4.0) (2026-06-11)
 
 
