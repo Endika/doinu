@@ -1,5 +1,12 @@
 # Changelog
 
+## [0.14.1](https://github.com/Endika/doinu/compare/v0.14.0...v0.14.1) (2026-06-15)
+
+
+### Chores
+
+* **deps-dev:** bump typescript from 5.9.3 to 6.0.3 ([7583502](https://github.com/Endika/doinu/commit/7583502c05b605384223795bf1962364a91c850a))
+
 ## [0.14.0](https://github.com/Endika/doinu/compare/v0.13.0...v0.14.0) (2026-06-11)
 
 
