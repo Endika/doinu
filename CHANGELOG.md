@@ -1,5 +1,12 @@
 # Changelog
 
+## [0.14.2](https://github.com/Endika/doinu/compare/v0.14.1...v0.14.2) (2026-06-15)
+
+
+### Chores
+
+* migrate to eslint flat config and upgrade to eslint 10 ([8ef9c30](https://github.com/Endika/doinu/commit/8ef9c30b44daf3bc62ae649e2e5d884995c1efd2))
+
 ## [0.14.1](https://github.com/Endika/doinu/compare/v0.14.0...v0.14.1) (2026-06-15)
 
 
