@@ -1,5 +1,14 @@
 # Changelog
 
+## [0.14.4](https://github.com/Endika/doinu/compare/v0.14.3...v0.14.4) (2026-07-06)
+
+
+### Chores
+
+* **deps-dev:** bump @types/node from 25.9.3 to 26.1.0 ([881ed05](https://github.com/Endika/doinu/commit/881ed05fa7a9785f067d846629cfabdfebb7738e))
+* **deps-dev:** bump the npm-minor-patch group with 3 updates ([c968983](https://github.com/Endika/doinu/commit/c968983afa0a21632e3459e86e8d887302a048ee))
+* **deps-dev:** bump the npm-minor-patch group with 3 updates ([33dde16](https://github.com/Endika/doinu/commit/33dde1621824f66ccfc2277d841c115dbd134f9e))
+
 ## [0.14.3](https://github.com/Endika/doinu/compare/v0.14.2...v0.14.3) (2026-06-21)
 
 
