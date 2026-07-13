@@ -2,7 +2,7 @@
 <html lang="en">
   <head>
     <meta charset="UTF-8" />
-    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" />
     <meta name="theme-color" content="#7c5cff" />
     <link rel="icon" href="favicon.ico" sizes="48x48" />
     <link rel="icon" href="favicon.svg" type="image/svg+xml" />
@@ -616,6 +616,18 @@
         #menu .menu-title { animation: none; }
       }
     </style>
+    <style>
+      /* Prevent accidental zoom on mobile: block double-tap zoom, keep scroll/tap. */
+      html {
+        touch-action: manipulation;
+      }
+    </style>
+    <script>
+      // iOS Safari ignores user-scalable=no, so block pinch-zoom explicitly.
+      document.addEventListener('gesturestart', function (e) {
+        e.preventDefault()
+      })
+    </script>
   </head>
   <body>
     <div id="app">
