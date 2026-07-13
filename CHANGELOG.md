@@ -1,5 +1,17 @@
 # Changelog
 
+## [0.14.5](https://github.com/Endika/doinu/compare/v0.14.4...v0.14.5) (2026-07-13)
+
+
+### Bug Fixes
+
+* prevent accidental pinch and double-tap zoom on mobile ([9a50162](https://github.com/Endika/doinu/commit/9a50162463e8397ede103b83f149635a8712a9c4))
+
+
+### Chores
+
+* **deps-dev:** bump the npm-minor-patch group with 4 updates ([f4c93ef](https://github.com/Endika/doinu/commit/f4c93efd9f6341523d35c0bb1f3b359ed60fece3))
+
 ## [0.14.4](https://github.com/Endika/doinu/compare/v0.14.3...v0.14.4) (2026-07-06)
 
 
