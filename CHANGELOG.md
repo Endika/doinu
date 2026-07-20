@@ -1,5 +1,12 @@
 # Changelog
 
+## [0.14.6](https://github.com/Endika/doinu/compare/v0.14.5...v0.14.6) (2026-07-20)
+
+
+### Chores
+
+* **deps-dev:** bump the npm-minor-patch group with 3 updates ([4aee38f](https://github.com/Endika/doinu/commit/4aee38f1eb09d68c4a601baa6e0bb8a2ef20a818))
+
 ## [0.14.5](https://github.com/Endika/doinu/compare/v0.14.4...v0.14.5) (2026-07-13)
 
 
