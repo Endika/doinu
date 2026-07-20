@@ -6,7 +6,6 @@ on:
   workflow_dispatch:
 
 permissions:
-  actions: write
   contents: write
   pull-requests: write
 
@@ -29,26 +28,8 @@ jobs:
         env:
           GH_TOKEN: ${{ secrets.RELEASE_PLEASE_TOKEN }}
           REPO: ${{ github.repository }}
-          WORKFLOW: ${{ github.workflow }}
           PR_JSON: ${{ steps.release.outputs.pr }}
-        run: |
-          PR=$(echo "$PR_JSON" | jq -r .number)
-          BRANCH=$(echo "$PR_JSON" | jq -r .headBranchName)
-          # Rebase-merge works when main has advanced past the release branch's
-          # base. When the release commit already sits directly on main HEAD,
-          # GitHub refuses ("This branch can't be rebased") on a rebase-only
-          # repo — fast-forward main to the release commit via the API instead.
-          gh pr merge --rebase --auto -R "$REPO" "$PR" \
-            || gh pr merge --rebase -R "$REPO" "$PR" \
-            || gh api -X PATCH "repos/$REPO/git/refs/heads/main" \
-                 -f sha="$(gh api "repos/$REPO/git/refs/heads/$BRANCH" --jq .object.sha)"
-          for _ in $(seq 1 30); do
-            STATE=$(gh pr view "$PR" -R "$REPO" --json state --jq .state)
-            [ "$STATE" = "MERGED" ] && break
-            sleep 2
-          done
-          gh api -X DELETE "repos/$REPO/git/refs/heads/$BRANCH" 2>/dev/null || true
-          gh workflow run "$WORKFLOW" -R "$REPO" --ref main
+        run: gh pr merge --rebase --auto -R "$REPO" "$(echo "$PR_JSON" | jq -r .number)"
 
       # No explicit redeploy on release: the version-bump commit is merged with
       # RELEASE_PLEASE_TOKEN (a PAT), so it triggers the on:push Deploy by itself
