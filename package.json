@@ -17,7 +17,6 @@
   "devDependencies": {
     "@eslint/js": "^10.0.1",
     "@types/node": "^26.1.2",
-    "@vite-pwa/assets-generator": "^1.0.2",
     "eslint": "^10.8.0",
     "globals": "^17.8.0",
     "typescript": "^6.0.3",
