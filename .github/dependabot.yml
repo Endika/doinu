@@ -9,6 +9,10 @@ updates:
       prefix: chore
       include: scope
     groups:
+      security-npm:
+        applies-to: security-updates
+        patterns:
+          - "*"
       npm-minor-patch:
         update-types:
           - minor
@@ -22,6 +26,10 @@ updates:
       prefix: ci
       include: scope
     groups:
+      security-actions:
+        applies-to: security-updates
+        patterns:
+          - "*"
       actions:
         update-types:
           - minor
