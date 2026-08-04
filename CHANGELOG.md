@@ -1,5 +1,12 @@
 # Changelog
 
+## [0.14.8](https://github.com/Endika/doinu/compare/v0.14.7...v0.14.8) (2026-08-04)
+
+
+### Bug Fixes
+
+* drop unused @vite-pwa/assets-generator so sharp leaves the tree ([ca93c8d](https://github.com/Endika/doinu/commit/ca93c8d9fae18f6488ca2ae84ed558c00c0f5621))
+
 ## [0.14.7](https://github.com/Endika/doinu/compare/v0.14.6...v0.14.7) (2026-08-04)
 
 
