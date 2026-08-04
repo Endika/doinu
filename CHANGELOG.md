@@ -1,5 +1,15 @@
 # Changelog
 
+## [0.14.7](https://github.com/Endika/doinu/compare/v0.14.6...v0.14.7) (2026-08-04)
+
+
+### Chores
+
+* **deps-dev:** bump fast-uri from 3.1.2 to 3.1.5 ([3a2a136](https://github.com/Endika/doinu/commit/3a2a1361d6a96412d1f850ee49b99b8941c70f68))
+* **deps-dev:** bump the npm-minor-patch group with 4 updates ([1ed67b8](https://github.com/Endika/doinu/commit/1ed67b8734bd216ee0d8d87cd822bfa4539c66f8))
+* **deps-dev:** bump typescript-eslint in the npm-minor-patch group ([b5e8f71](https://github.com/Endika/doinu/commit/b5e8f71ab541e4b4b4850ce691a299c1e6e76e73))
+* **deps:** bump brace-expansion ([df6ca4f](https://github.com/Endika/doinu/commit/df6ca4f98a5dc5f34f9061308a20468ba83e5530))
+
 ## [0.14.6](https://github.com/Endika/doinu/compare/v0.14.5...v0.14.6) (2026-07-20)
 
 
