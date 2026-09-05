@@ -56,9 +56,9 @@ Web Audio. No framework, no backend. Tested with **vitest**.
 ```bash
 npm install
 npm run dev        # local dev server
-npm run lint       # eslint
-npm run typecheck  # tsc --noEmit
-npm test           # vitest
+npm run lint       # eslint (src + tests)
+npm run type:check # tsc --noEmit (src + tests)
+npm run test:run   # vitest run
 npm run build      # production build (dist/)
 ```
 
