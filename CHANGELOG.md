@@ -1,5 +1,12 @@
 # Changelog
 
+## [0.14.12](https://github.com/Endika/doinu/compare/v0.14.11...v0.14.12) (2026-09-05)
+
+
+### Chores
+
+* ignore the prettier reformat in git blame ([e0a6d12](https://github.com/Endika/doinu/commit/e0a6d12f9357c60f35649fe132a4e167d5e1c194))
+
 ## [0.14.11](https://github.com/Endika/doinu/compare/v0.14.10...v0.14.11) (2026-09-05)
 
 
