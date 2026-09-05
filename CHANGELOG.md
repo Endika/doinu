@@ -1,5 +1,12 @@
 # Changelog
 
+## [0.14.13](https://github.com/Endika/doinu/compare/v0.14.12...v0.14.13) (2026-09-05)
+
+
+### Chores
+
+* run the four CI gates in pre-commit ([7757e2f](https://github.com/Endika/doinu/commit/7757e2fbbc4ad9fc898aaad2ff498c0e1c8dbd69))
+
 ## [0.14.12](https://github.com/Endika/doinu/compare/v0.14.11...v0.14.12) (2026-09-05)
 
 
