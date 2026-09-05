@@ -1,5 +1,16 @@
 # Changelog
 
+## [0.14.9](https://github.com/Endika/doinu/compare/v0.14.8...v0.14.9) (2026-09-05)
+
+
+### Chores
+
+* **deps-dev:** bump fast-uri ([22cdcbd](https://github.com/Endika/doinu/commit/22cdcbd8eae504b1a0251b6db23593d8fc2dd346))
+* **deps-dev:** bump the npm-minor-patch group with 2 updates ([288aa73](https://github.com/Endika/doinu/commit/288aa73169c951de156c9024b08303556db25718))
+* **deps-dev:** bump the npm-minor-patch group with 3 updates ([d1a6d6c](https://github.com/Endika/doinu/commit/d1a6d6c707268eabd894978ec615a9f1e540f43b))
+* **deps-dev:** bump the npm-minor-patch group with 3 updates ([1536203](https://github.com/Endika/doinu/commit/1536203d44b87b5890ad1be3734e928493c0eb0b))
+* **deps-dev:** bump the npm-minor-patch group with 3 updates ([d5fdc35](https://github.com/Endika/doinu/commit/d5fdc35baa32e30de61cf97517bb7b436e279243))
+
 ## [0.14.8](https://github.com/Endika/doinu/compare/v0.14.7...v0.14.8) (2026-08-04)
 
 
