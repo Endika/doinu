@@ -22,6 +22,6 @@ describe('SequenceMatcher', () => {
   })
   it('ships a few phrases', () => {
     expect(ECHO_PHRASES.length).toBeGreaterThanOrEqual(3)
-    expect(ECHO_PHRASES.every(p => p.notes.length > 0 && p.noteDurMs > 0)).toBe(true)
+    expect(ECHO_PHRASES.every((p) => p.notes.length > 0 && p.noteDurMs > 0)).toBe(true)
   })
 })

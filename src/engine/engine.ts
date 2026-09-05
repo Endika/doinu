@@ -5,7 +5,9 @@ import type { Chart, Target } from './chart'
 import { Matcher, MatchOutcome } from './matcher'
 import { Scorer, ScoreResult, type Summary } from './scoring'
 
-export interface EngineOptions { windowMs: number }
+export interface EngineOptions {
+  windowMs: number
+}
 
 export interface FrameState {
   nowMs: number
@@ -33,7 +35,7 @@ export class Engine {
   }
 
   start(): void {
-    this.adapter.onEvent(e => this.onInput(e))
+    this.adapter.onEvent((e) => this.onInput(e))
     // Fire-and-forget: subscription above is already in place synchronously.
     void this.adapter.start()
   }

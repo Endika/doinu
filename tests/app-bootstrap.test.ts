@@ -28,16 +28,20 @@ describe('waitEnabled', () => {
 
 describe('pickCurrentExerciseId', () => {
   it('returns the first inProgress exercise', () => {
-    expect(pickCurrentExerciseId([
-      { exerciseId: 'a', state: MasteryState.Mastered },
-      { exerciseId: 'b', state: MasteryState.InProgress },
-      { exerciseId: 'c', state: MasteryState.Locked },
-    ])).toBe('b')
+    expect(
+      pickCurrentExerciseId([
+        { exerciseId: 'a', state: MasteryState.Mastered },
+        { exerciseId: 'b', state: MasteryState.InProgress },
+        { exerciseId: 'c', state: MasteryState.Locked },
+      ]),
+    ).toBe('b')
   })
   it('falls back to the last exercise when all are mastered', () => {
-    expect(pickCurrentExerciseId([
-      { exerciseId: 'a', state: MasteryState.Mastered },
-      { exerciseId: 'b', state: MasteryState.Mastered },
-    ])).toBe('b')
+    expect(
+      pickCurrentExerciseId([
+        { exerciseId: 'a', state: MasteryState.Mastered },
+        { exerciseId: 'b', state: MasteryState.Mastered },
+      ]),
+    ).toBe('b')
   })
 })

@@ -8,7 +8,7 @@ const off = (note: number, time: number): InputEvent => ({ note, time, type: Inp
 describe('CompositionRecorder', () => {
   it('captures real timing, normalised so the first note starts at 0', () => {
     const r = new CompositionRecorder()
-    ;[on(60, 1000), off(60, 1500), on(62, 2000), off(62, 2200)].forEach(e => r.feed(e))
+    ;[on(60, 1000), off(60, 1500), on(62, 2000), off(62, 2200)].forEach((e) => r.feed(e))
     expect(r.finish(2200)).toEqual([
       { midi: 60, startMs: 0, durMs: 500 },
       { midi: 62, startMs: 1000, durMs: 200 },

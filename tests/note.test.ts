@@ -7,5 +7,7 @@ describe('note model', () => {
     expect(n.octave).toBe(4)
     expect(n.colorClass).toBe('pc-0')
   })
-  it('maps A4 (69) to pitch class 9', () => { expect(noteFromMidi(69).pitchClass).toBe(9) })
+  it('maps A4 (69) to pitch class 9', () => {
+    expect(noteFromMidi(69).pitchClass).toBe(9)
+  })
 })

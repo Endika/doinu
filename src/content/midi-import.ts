@@ -68,8 +68,8 @@ export function parseMidi(data: ArrayBuffer, fallbackTitle: string): ImportedSon
 
   // Collect note-bearing tracks with their average pitch, to decide the split.
   const noteTracks = midi.tracks
-    .map(t => t.notes.map((n): RawNote => ({ midi: n.midi, time: n.time, duration: n.duration })))
-    .filter(notes => notes.length > 0)
+    .map((t) => t.notes.map((n): RawNote => ({ midi: n.midi, time: n.time, duration: n.duration })))
+    .filter((notes) => notes.length > 0)
 
   if (noteTracks.length === 0) {
     throw new MidiImportError('No notes in this MIDI file')
@@ -81,7 +81,7 @@ export function parseMidi(data: ArrayBuffer, fallbackTitle: string): ImportedSon
   //  - exactly 1 note track: split by pitch (midi >= 60 -> right, else left).
   const handForNote: (track: number, midi: number) => Hand = (() => {
     if (noteTracks.length >= 2) {
-      const avgs = noteTracks.map(notes => notes.reduce((a, n) => a + n.midi, 0) / notes.length)
+      const avgs = noteTracks.map((notes) => notes.reduce((a, n) => a + n.midi, 0) / notes.length)
       let rightTrack = 0
       for (let i = 1; i < avgs.length; i++) if (avgs[i] > avgs[rightTrack]) rightTrack = i
       return (track: number): Hand => (track === rightTrack ? Hand.Right : Hand.Left)
@@ -113,8 +113,8 @@ export function parseMidi(data: ArrayBuffer, fallbackTitle: string): ImportedSon
 
   built.sort((a, b) => a.target.startMs - b.target.startMs)
   const capped = built.slice(0, MAX_TARGETS)
-  const targets = capped.map(b => b.target)
-  const hasLeft = capped.some(b => b.hand === Hand.Left)
+  const targets = capped.map((b) => b.target)
+  const hasLeft = capped.some((b) => b.hand === Hand.Left)
 
   const bpm = midi.header.tempos[0]?.bpm ?? 100
 
@@ -128,7 +128,7 @@ export function parseMidi(data: ArrayBuffer, fallbackTitle: string): ImportedSon
 export function filterChartByHand(chart: Chart, sel: HandSelection): Chart {
   if (sel === HandSelection.Both) return chart
   const hand = sel === HandSelection.Right ? Hand.Right : Hand.Left
-  return { bpm: chart.bpm, targets: chart.targets.filter(t => t.hand === hand) }
+  return { bpm: chart.bpm, targets: chart.targets.filter((t) => t.hand === hand) }
 }
 
 /** Wrap a prebuilt chart as a `Mode` so it can run through `runChartWaiting`. */

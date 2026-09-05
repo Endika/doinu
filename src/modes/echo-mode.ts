@@ -5,7 +5,10 @@
  * matcher.
  */
 
-export enum PressResult { Correct = 'correct', Wrong = 'wrong' }
+export enum PressResult {
+  Correct = 'correct',
+  Wrong = 'wrong',
+}
 
 export interface Phrase {
   id: string

@@ -9,7 +9,15 @@ const ex: Exercise[] = [
   { id: 'b', title: 'B', bpm: 60, notes: [62], passAccuracy: 0.9 },
 ]
 function ses(accuracy: number, meanFindMs: number, tempoBpm: number, timestamp: number): Session {
-  return { id: `s${timestamp}`, exerciseId: 'a', timestamp, accuracy, meanFindMs, meanTimingDevMs: 0, tempoBpm }
+  return {
+    id: `s${timestamp}`,
+    exerciseId: 'a',
+    timestamp,
+    accuracy,
+    meanFindMs,
+    meanTimingDevMs: 0,
+    tempoBpm,
+  }
 }
 
 describe('buildProgressReport', () => {
@@ -17,8 +25,15 @@ describe('buildProgressReport', () => {
     a: [ses(0.7, 1500, 60, 1), ses(0.95, 900, 70, 2), ses(0.9, 800, 80, 3)],
     b: [],
   }
-  const states: Record<string, MasteryState> = { a: MasteryState.Mastered, b: MasteryState.InProgress }
-  const report = buildProgressReport(ex, id => sessions[id] ?? [], id => states[id])
+  const states: Record<string, MasteryState> = {
+    a: MasteryState.Mastered,
+    b: MasteryState.InProgress,
+  }
+  const report = buildProgressReport(
+    ex,
+    (id) => sessions[id] ?? [],
+    (id) => states[id],
+  )
 
   it('summarizes measured metrics per exercise', () => {
     const a = report[0]
@@ -27,7 +42,7 @@ describe('buildProgressReport', () => {
     expect(a.latestAccuracy).toBeCloseTo(0.9)
     expect(a.bestTempoBpm).toBe(80)
     expect(a.firstFindMs).toBe(1500)
-    expect(a.latestFindMs).toBe(800)  // find-time dropped → improvement
+    expect(a.latestFindMs).toBe(800) // find-time dropped → improvement
     expect(a.state).toBe(MasteryState.Mastered)
   })
   it('handles an exercise with no sessions (all zeros, state preserved)', () => {

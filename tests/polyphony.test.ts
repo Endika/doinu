@@ -7,12 +7,23 @@ import type { Song } from '../src/content/songs'
 const rightOnly: Song = { id: 'r', title: 'R', bpm: 100, right: [{ midi: 60, dur: 1 }] }
 const twoHand: Song = { ...rightOnly, id: 't', left: [{ midi: 48, startBeat: 0, dur: 1 }] }
 
-const lesson = (kind: LessonKind): PathLesson =>
-  ({ id: 'x', title: 'X', concept: '', kind, milestone: 1, bpm: 100, passAccuracy: 0.7 })
+const lesson = (kind: LessonKind): PathLesson => ({
+  id: 'x',
+  title: 'X',
+  concept: '',
+  kind,
+  milestone: 1,
+  bpm: 100,
+  passAccuracy: 0.7,
+})
 
 describe('availableHands', () => {
   it('offers all of a two-hand song on a polyphonic input', () => {
-    expect(availableHands(twoHand, true)).toEqual([HandSelection.Right, HandSelection.Left, HandSelection.Both])
+    expect(availableHands(twoHand, true)).toEqual([
+      HandSelection.Right,
+      HandSelection.Left,
+      HandSelection.Both,
+    ])
   })
   it('drops "both" on a monophonic input but keeps single hands', () => {
     expect(availableHands(twoHand, false)).toEqual([HandSelection.Right, HandSelection.Left])

@@ -3,47 +3,49 @@ import { PATH, PATH_LESSONS, LessonKind } from '../src/content/path'
 
 describe('learning path content', () => {
   it('has all six units of the ladder', () => {
-    expect(PATH.map(u => u.id)).toEqual(['u1', 'u2', 'u3', 'u4', 'u5', 'u6'])
+    expect(PATH.map((u) => u.id)).toEqual(['u1', 'u2', 'u3', 'u4', 'u5', 'u6'])
   })
 
   it('has globally unique lesson ids', () => {
-    const ids = PATH_LESSONS.map(l => l.id)
+    const ids = PATH_LESSONS.map((l) => l.id)
     expect(new Set(ids).size).toBe(ids.length)
   })
 
   it('every milestone-1 lesson is playable (melody/reading notes, chords, or two-hand content)', () => {
-    const m1 = PATH_LESSONS.filter(l => l.milestone === 1)
+    const m1 = PATH_LESSONS.filter((l) => l.milestone === 1)
     expect(m1.length).toBeGreaterThan(0)
     for (const l of m1) {
-      if (l.kind === LessonKind.Melody || l.kind === LessonKind.Reading) expect(l.notes && l.notes.length > 0).toBe(true)
+      if (l.kind === LessonKind.Melody || l.kind === LessonKind.Reading)
+        expect(l.notes && l.notes.length > 0).toBe(true)
       else if (l.kind === LessonKind.Chord) expect(l.chords && l.chords.length > 0).toBe(true)
-      else if (l.kind === LessonKind.TwoHands) expect((l.right?.length ?? 0) + (l.left?.length ?? 0)).toBeGreaterThan(0)
+      else if (l.kind === LessonKind.TwoHands)
+        expect((l.right?.length ?? 0) + (l.left?.length ?? 0)).toBeGreaterThan(0)
       else throw new Error(`milestone-1 lesson ${l.id} has non-playable kind ${l.kind}`)
     }
   })
 
   it('milestone-1 now includes two-hand lessons, each with a left hand', () => {
-    const twoHands = PATH_LESSONS.filter(l => l.milestone === 1 && l.kind === 'twohands')
+    const twoHands = PATH_LESSONS.filter((l) => l.milestone === 1 && l.kind === 'twohands')
     expect(twoHands.length).toBeGreaterThanOrEqual(1)
-    for (const l of twoHands) expect((l.left?.length ?? 0)).toBeGreaterThan(0)
+    for (const l of twoHands) expect(l.left?.length ?? 0).toBeGreaterThan(0)
   })
 
   it('introduces at least one black key and at least two chords in milestone 1', () => {
-    const m1 = PATH_LESSONS.filter(l => l.milestone === 1)
+    const m1 = PATH_LESSONS.filter((l) => l.milestone === 1)
     const blackKeys = new Set([1, 3, 6, 8, 10]) // C#, D#, F#, G#, A# pitch classes
-    const hasBlack = m1.some(l => (l.notes ?? []).some(n => blackKeys.has(n % 12)))
+    const hasBlack = m1.some((l) => (l.notes ?? []).some((n) => blackKeys.has(n % 12)))
     expect(hasBlack).toBe(true)
-    const chordCount = m1.filter(l => l.kind === 'chord').length
+    const chordCount = m1.filter((l) => l.kind === 'chord').length
     expect(chordCount).toBeGreaterThanOrEqual(2)
   })
 
   it('has the whole ladder playable now (every lesson is milestone 1)', () => {
     // M3 (more keys + reading) shipped: the full six-unit journey is buildable.
-    expect(PATH_LESSONS.every(l => l.milestone === 1)).toBe(true)
+    expect(PATH_LESSONS.every((l) => l.milestone === 1)).toBe(true)
   })
 
   it('ships reading lessons, each with a note bank to read', () => {
-    const reading = PATH_LESSONS.filter(l => l.kind === LessonKind.Reading)
+    const reading = PATH_LESSONS.filter((l) => l.kind === LessonKind.Reading)
     expect(reading.length).toBeGreaterThanOrEqual(1)
     for (const l of reading) expect(l.notes && l.notes.length > 0).toBe(true)
   })

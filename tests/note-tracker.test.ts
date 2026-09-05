@@ -10,7 +10,7 @@ function run(readings: (number | null)[], stable = 3): InputEvent[] {
   return out
 }
 
-const types = (es: InputEvent[]) => es.map(e => `${e.type}:${e.note}`)
+const types = (es: InputEvent[]) => es.map((e) => `${e.type}:${e.note}`)
 
 describe('NoteTracker', () => {
   it('commits a note only after it holds for `stableFrames`', () => {
@@ -21,7 +21,11 @@ describe('NoteTracker', () => {
 
   it('stops the old note and starts the new one on a stable change', () => {
     const es = run([60, 60, 60, 62, 62, 62])
-    expect(types(es)).toEqual([`${InputEventType.On}:60`, `${InputEventType.Off}:60`, `${InputEventType.On}:62`])
+    expect(types(es)).toEqual([
+      `${InputEventType.On}:60`,
+      `${InputEventType.Off}:60`,
+      `${InputEventType.On}:62`,
+    ])
   })
 
   it('emits a note-off when the sound stops (stable silence)', () => {
@@ -37,7 +41,8 @@ describe('NoteTracker', () => {
 
   it('exposes the currently sounding note for stop cleanup', () => {
     const t = new NoteTracker(2)
-    t.feed(67, 0); t.feed(67, 1)
+    t.feed(67, 0)
+    t.feed(67, 1)
     expect(t.sounding).toBe(67)
   })
 })

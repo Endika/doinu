@@ -39,8 +39,8 @@ describe('Matcher.pending — what wait mode is waiting on', () => {
   }
   it('lists unplayed targets and drops them once hit', () => {
     const m = new Matcher(chart, { windowMs: 150 })
-    expect(m.pending().map(t => t.id)).toEqual(['a', 'b'])
+    expect(m.pending().map((t) => t.id)).toEqual(['a', 'b'])
     m.handle({ note: 60, type: InputEventType.On, time: 0 })
-    expect(m.pending().map(t => t.id)).toEqual(['b'])
+    expect(m.pending().map((t) => t.id)).toEqual(['b'])
   })
 })

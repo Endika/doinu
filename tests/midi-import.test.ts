@@ -40,17 +40,17 @@ describe('parseMidi', () => {
   it('splits into right (higher) and left (lower) hands', () => {
     const s = parseMidi(buildTwoHandMidi(), 'song')
     expect(s.hasLeft).toBe(true)
-    expect(s.chart.targets.some(t => t.hand === Hand.Right && t.midi === 72)).toBe(true)
-    expect(s.chart.targets.some(t => t.hand === Hand.Left && t.midi === 48)).toBe(true)
+    expect(s.chart.targets.some((t) => t.hand === Hand.Right && t.midi === 72)).toBe(true)
+    expect(s.chart.targets.some((t) => t.hand === Hand.Left && t.midi === 48)).toBe(true)
     // sorted by start
-    const starts = s.chart.targets.map(t => t.startMs)
+    const starts = s.chart.targets.map((t) => t.startMs)
     expect(starts).toEqual([...starts].sort((a, b) => a - b))
   })
 
   it('splits a single track by pitch (>=60 right, <60 left)', () => {
     const s = parseMidi(buildSingleTrackMidi(), 'song')
-    expect(s.chart.targets.find(t => t.midi === 64)?.hand).toBe(Hand.Right)
-    expect(s.chart.targets.find(t => t.midi === 50)?.hand).toBe(Hand.Left)
+    expect(s.chart.targets.find((t) => t.midi === 64)?.hand).toBe(Hand.Right)
+    expect(s.chart.targets.find((t) => t.midi === 50)?.hand).toBe(Hand.Left)
     expect(s.hasLeft).toBe(true)
   })
 
@@ -70,7 +70,7 @@ describe('parseMidi', () => {
 
   it('enforces a minimum note duration', () => {
     const s = parseMidi(buildTwoHandMidi(), 'song')
-    expect(s.chart.targets.every(t => t.durMs >= 60)).toBe(true)
+    expect(s.chart.targets.every((t) => t.durMs >= 60)).toBe(true)
   })
 
   it('rejects oversize input', () => {
@@ -79,16 +79,22 @@ describe('parseMidi', () => {
   })
 
   it('rejects a non-midi buffer', () => {
-    expect(() => parseMidi(new TextEncoder().encode('not midi').buffer as ArrayBuffer, 'x')).toThrow(
-      MidiImportError,
-    )
+    expect(() =>
+      parseMidi(new TextEncoder().encode('not midi').buffer as ArrayBuffer, 'x'),
+    ).toThrow(MidiImportError)
   })
 
   it('filterChartByHand keeps only the selected hand', () => {
     const s = parseMidi(buildTwoHandMidi(), 'song')
-    expect(filterChartByHand(s.chart, HandSelection.Left).targets.every(t => t.hand === Hand.Left)).toBe(true)
-    expect(filterChartByHand(s.chart, HandSelection.Right).targets.every(t => t.hand === Hand.Right)).toBe(true)
-    expect(filterChartByHand(s.chart, HandSelection.Both).targets.length).toBe(s.chart.targets.length)
+    expect(
+      filterChartByHand(s.chart, HandSelection.Left).targets.every((t) => t.hand === Hand.Left),
+    ).toBe(true)
+    expect(
+      filterChartByHand(s.chart, HandSelection.Right).targets.every((t) => t.hand === Hand.Right),
+    ).toBe(true)
+    expect(filterChartByHand(s.chart, HandSelection.Both).targets.length).toBe(
+      s.chart.targets.length,
+    )
   })
 
   it('chartMode wraps a prebuilt chart into a runnable Mode', () => {

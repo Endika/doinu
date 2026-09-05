@@ -18,11 +18,7 @@ export const MIDI_HIGH = 96
  * At startMs === nowMs the note sits exactly on the hit line; future notes
  * (startMs > nowMs) are above it (smaller y), past notes below (larger y).
  */
-export function noteY(
-  target: { startMs: number },
-  nowMs: number,
-  cfg: GeometryConfig,
-): number {
+export function noteY(target: { startMs: number }, nowMs: number, cfg: GeometryConfig): number {
   return cfg.hitLineY - (target.startMs - nowMs) * cfg.pxPerMs
 }
 
@@ -73,7 +69,12 @@ interface BarRect {
  * Pure x/width layout for a falling-note bar: centred over the REAL piano key it
  * belongs to (shared `keyRect` layout), so notes line up with the keyboard below.
  */
-export function barRect(midi: number, canvasWidth: number, low = MIDI_LOW, high = MIDI_HIGH): BarRect {
+export function barRect(
+  midi: number,
+  canvasWidth: number,
+  low = MIDI_LOW,
+  high = MIDI_HIGH,
+): BarRect {
   const k = keyRect(midi, canvasWidth, low, high)
   if (!k) return { x: 0, width: 0 }
   const width = Math.max(2, k.width * 0.7)

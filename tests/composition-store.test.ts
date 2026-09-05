@@ -4,12 +4,22 @@ import type { RecordedNote } from '../src/modes/composition-recorder'
 
 class FakeStorage {
   private map = new Map<string, string>()
-  getItem(k: string): string | null { return this.map.get(k) ?? null }
-  setItem(k: string, v: string): void { this.map.set(k, v) }
+  getItem(k: string): string | null {
+    return this.map.get(k) ?? null
+  }
+  setItem(k: string, v: string): void {
+    this.map.set(k, v)
+  }
 }
 
-const ids = () => { let n = 0; return () => `id${++n}` }
-const notes: RecordedNote[] = [{ midi: 60, startMs: 0, durMs: 500 }, { midi: 62, startMs: 600, durMs: 400 }]
+const ids = () => {
+  let n = 0
+  return () => `id${++n}`
+}
+const notes: RecordedNote[] = [
+  { midi: 60, startMs: 0, durMs: 500 },
+  { midi: 62, startMs: 600, durMs: 400 },
+]
 
 describe('CompositionStore', () => {
   it('saves and lists a composition', () => {
@@ -25,9 +35,9 @@ describe('CompositionStore', () => {
     a.save({ name: 'One', createdAt: 1, notes })
     const saved = a.save({ name: 'Two', createdAt: 2, notes })
     const b = new CompositionStore(storage)
-    expect(b.all().map(c => c.name)).toEqual(['One', 'Two'])
+    expect(b.all().map((c) => c.name)).toEqual(['One', 'Two'])
     b.remove(saved.id)
-    expect(b.all().map(c => c.name)).toEqual(['One'])
+    expect(b.all().map((c) => c.name)).toEqual(['One'])
   })
 
   it('returns [] when storage is empty or corrupt', () => {
@@ -45,6 +55,6 @@ describe('compositionChart', () => {
       { id: 'n0', midi: 60, startMs: 0, durMs: 500, hand: 'R' },
       { id: 'n1', midi: 62, startMs: 600, durMs: 400, hand: 'R' },
     ])
-    expect(new Set(chart.targets.map(t => t.id)).size).toBe(2)
+    expect(new Set(chart.targets.map((t) => t.id)).size).toBe(2)
   })
 })

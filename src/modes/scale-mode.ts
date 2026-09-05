@@ -21,10 +21,8 @@ export class ScaleMode implements Mode {
 
   buildChart(): Chart {
     const { rootMidi, steps, bpm, descending } = this.spec
-    const ascending = steps.map(s => rootMidi + s)
-    const notes = descending
-      ? [...ascending, ...ascending.slice(0, -1).reverse()]
-      : ascending
+    const ascending = steps.map((s) => rootMidi + s)
+    const notes = descending ? [...ascending, ...ascending.slice(0, -1).reverse()] : ascending
 
     const beatMs = 60000 / bpm
     const targets: Target[] = notes.map((midi, i) => ({
@@ -46,6 +44,21 @@ export class ScaleMode implements Mode {
 }
 
 export const SCALES: ScaleSpec[] = [
-  { id: 'c-major-up', title: 'C Major (up)', rootMidi: 60, steps: MAJOR_STEPS, bpm: 72, passAccuracy: 0.9 },
-  { id: 'c-major-updown', title: 'C Major (up/down)', rootMidi: 60, steps: MAJOR_STEPS, bpm: 72, passAccuracy: 0.9, descending: true },
+  {
+    id: 'c-major-up',
+    title: 'C Major (up)',
+    rootMidi: 60,
+    steps: MAJOR_STEPS,
+    bpm: 72,
+    passAccuracy: 0.9,
+  },
+  {
+    id: 'c-major-updown',
+    title: 'C Major (up/down)',
+    rootMidi: 60,
+    steps: MAJOR_STEPS,
+    bpm: 72,
+    passAccuracy: 0.9,
+    descending: true,
+  },
 ]

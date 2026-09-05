@@ -3,25 +3,28 @@ import { MemoryGame, MEMORY_NOTES, PressResult } from '../src/modes/memory-mode'
 
 describe('MemoryGame', () => {
   it('grows the sequence and tracks the longest completed run', () => {
-    const notes = [60, 62, 64]; let i = 0
+    const notes = [60, 62, 64]
+    let i = 0
     const g = new MemoryGame(() => notes[i++ % notes.length])
-    g.startRound()                      // seq [60]
+    g.startRound() // seq [60]
     expect(g.press(60)).toBe(PressResult.Complete)
     expect(g.longest).toBe(1)
-    g.startRound()                      // seq [60,62]
+    g.startRound() // seq [60,62]
     expect(g.press(60)).toBe(PressResult.Correct)
     expect(g.press(62)).toBe(PressResult.Complete)
     expect(g.longest).toBe(2)
   })
   it('a wrong press loses the round', () => {
     const g = new MemoryGame(() => 60)
-    g.startRound()                      // [60]
+    g.startRound() // [60]
     expect(g.press(64)).toBe(PressResult.Wrong)
   })
   it('reset keeps the best length', () => {
-    const notes = [60, 62]; let i = 0
+    const notes = [60, 62]
+    let i = 0
     const g = new MemoryGame(() => notes[i++ % notes.length])
-    g.startRound(); g.press(60)         // complete len 1
+    g.startRound()
+    g.press(60) // complete len 1
     g.reset()
     expect(g.sequence).toEqual([])
     expect(g.longest).toBe(1)

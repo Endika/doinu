@@ -2,7 +2,10 @@
 <html lang="en">
   <head>
     <meta charset="UTF-8" />
-    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" />
+    <meta
+      name="viewport"
+      content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no"
+    />
     <meta name="theme-color" content="#7c5cff" />
     <link rel="icon" href="favicon.ico" sizes="48x48" />
     <link rel="icon" href="favicon.svg" type="image/svg+xml" />
@@ -74,9 +77,15 @@
         animation: status-pop 0.4s cubic-bezier(0.34, 1.56, 0.64, 1);
       }
       @keyframes status-pop {
-        0% { transform: translateX(-50%) scale(0.6); }
-        60% { transform: translateX(-50%) scale(1.12); }
-        100% { transform: translateX(-50%) scale(1); }
+        0% {
+          transform: translateX(-50%) scale(0.6);
+        }
+        60% {
+          transform: translateX(-50%) scale(1.12);
+        }
+        100% {
+          transform: translateX(-50%) scale(1);
+        }
       }
       /* Round, chunky floating buttons (report + back). */
       #report-toggle,
@@ -226,7 +235,9 @@
         font-weight: 700;
         cursor: pointer;
         box-shadow: 0 6px 0 rgba(0, 0, 0, 0.14);
-        transition: transform 0.12s ease, box-shadow 0.12s ease;
+        transition:
+          transform 0.12s ease,
+          box-shadow 0.12s ease;
       }
       .menu-btn:hover {
         transform: translateY(-2px);
@@ -235,11 +246,21 @@
         transform: translateY(3px);
         box-shadow: 0 2px 0 rgba(0, 0, 0, 0.14);
       }
-      .menu-btn[data-activity='melody'] { background: #ff7eb3; }
-      .menu-btn[data-activity='songs'] { background: #ff6b9d; }
-      .menu-btn[data-activity='import'] { background: #c08bff; }
-      .menu-btn[data-activity='practice'] { background: #7c83ff; }
-      .menu-btn[data-activity='progress'] { background: #ffb454; }
+      .menu-btn[data-activity='melody'] {
+        background: #ff7eb3;
+      }
+      .menu-btn[data-activity='songs'] {
+        background: #ff6b9d;
+      }
+      .menu-btn[data-activity='import'] {
+        background: #c08bff;
+      }
+      .menu-btn[data-activity='practice'] {
+        background: #7c83ff;
+      }
+      .menu-btn[data-activity='progress'] {
+        background: #ffb454;
+      }
       /* Songs / Progress / Path overlays: reuse the menu look; scrollable content. */
       #songs,
       #progress,
@@ -363,15 +384,23 @@
         font-size: 0.92rem;
         cursor: pointer;
         box-shadow: 0 4px 0 rgba(0, 0, 0, 0.14);
-        transition: transform 0.1s ease, box-shadow 0.1s ease;
+        transition:
+          transform 0.1s ease,
+          box-shadow 0.1s ease;
       }
       .hand-btn:active {
         transform: translateY(2px);
         box-shadow: 0 1px 0 rgba(0, 0, 0, 0.14);
       }
-      .hand-btn[data-hand='R'] { background: #ff7eb3; }
-      .hand-btn[data-hand='L'] { background: #4fc3f7; }
-      .hand-btn[data-hand='both'] { background: #4cd4a0; }
+      .hand-btn[data-hand='R'] {
+        background: #ff7eb3;
+      }
+      .hand-btn[data-hand='L'] {
+        background: #4fc3f7;
+      }
+      .hand-btn[data-hand='both'] {
+        background: #4cd4a0;
+      }
       #songs-back {
         margin-top: 0.6rem;
         background: #6d5dfc;
@@ -396,7 +425,9 @@
         justify-content: center;
         background: var(--sky);
       }
-      #mymelodies.hidden { display: none; }
+      #mymelodies.hidden {
+        display: none;
+      }
       #mymelodies .menu-card {
         display: flex;
         flex-direction: column;
@@ -409,9 +440,19 @@
         box-sizing: border-box;
       }
       #mymelodies .menu-title,
-      #mymelodies .menu-sub { flex: 0 0 auto; text-align: center; }
-      #compose-record { flex: 0 0 auto; background: #ff5d8f; }
-      #mymelodies-back { flex: 0 0 auto; margin-top: 0.4rem; background: #6d5dfc; }
+      #mymelodies .menu-sub {
+        flex: 0 0 auto;
+        text-align: center;
+      }
+      #compose-record {
+        flex: 0 0 auto;
+        background: #ff5d8f;
+      }
+      #mymelodies-back {
+        flex: 0 0 auto;
+        margin-top: 0.4rem;
+        background: #6d5dfc;
+      }
       #melody-list {
         flex: 1 1 auto;
         min-height: 0;
@@ -422,12 +463,28 @@
         padding-right: 0.25rem;
         gap: 0.6rem;
       }
-      .menu-btn[data-activity='compose'] { background: #ff5d8f; }
-      .hidden { display: none; }
-      #mic-enable { background: #e0356b; }
-      #input-toggle { background: #6d5dfc; font-size: 0.98rem; padding: 0.7rem 1rem; }
-      #wait-toggle { background: #7c83ff; font-size: 0.98rem; padding: 0.7rem 1rem; }
-      .menu-btn[data-activity='mictest'] { background: #5cd0e0; }
+      .menu-btn[data-activity='compose'] {
+        background: #ff5d8f;
+      }
+      .hidden {
+        display: none;
+      }
+      #mic-enable {
+        background: #e0356b;
+      }
+      #input-toggle {
+        background: #6d5dfc;
+        font-size: 0.98rem;
+        padding: 0.7rem 1rem;
+      }
+      #wait-toggle {
+        background: #7c83ff;
+        font-size: 0.98rem;
+        padding: 0.7rem 1rem;
+      }
+      .menu-btn[data-activity='mictest'] {
+        background: #5cd0e0;
+      }
       #mictest {
         position: fixed;
         inset: 0;
@@ -438,7 +495,9 @@
         justify-content: center;
         background: var(--sky);
       }
-      #mictest.hidden { display: none; }
+      #mictest.hidden {
+        display: none;
+      }
       #mictest .menu-card {
         display: flex;
         flex-direction: column;
@@ -449,7 +508,9 @@
         box-sizing: border-box;
       }
       #mictest .menu-title,
-      #mictest .menu-sub { text-align: center; }
+      #mictest .menu-sub {
+        text-align: center;
+      }
       #mictest-note {
         text-align: center;
         font-size: 3.4rem;
@@ -458,7 +519,12 @@
         min-height: 4rem;
         line-height: 1.1;
       }
-      #mictest-state { text-align: center; font-weight: 700; color: #8a5be0; min-height: 1.4rem; }
+      #mictest-state {
+        text-align: center;
+        font-weight: 700;
+        color: #8a5be0;
+        min-height: 1.4rem;
+      }
       #mictest-meter {
         position: relative;
         height: 1.6rem;
@@ -466,12 +532,35 @@
         background: rgba(124, 92, 255, 0.18);
         overflow: hidden;
       }
-      #mictest-level { height: 100%; width: 0%; background: #4cd4a0; }
-      #mictest-gate { position: absolute; top: 0; bottom: 0; width: 3px; background: #e0356b; left: 10%; }
-      #mictest-sens { display: flex; flex-direction: column; gap: 0.3rem; font-weight: 700; color: var(--ink); }
-      #mictest-slider { width: 100%; }
-      #mictest-calibrate { background: #ff9f6b; }
-      #mictest-back { background: #6d5dfc; }
+      #mictest-level {
+        height: 100%;
+        width: 0%;
+        background: #4cd4a0;
+      }
+      #mictest-gate {
+        position: absolute;
+        top: 0;
+        bottom: 0;
+        width: 3px;
+        background: #e0356b;
+        left: 10%;
+      }
+      #mictest-sens {
+        display: flex;
+        flex-direction: column;
+        gap: 0.3rem;
+        font-weight: 700;
+        color: var(--ink);
+      }
+      #mictest-slider {
+        width: 100%;
+      }
+      #mictest-calibrate {
+        background: #ff9f6b;
+      }
+      #mictest-back {
+        background: #6d5dfc;
+      }
       #compose-stop {
         position: fixed;
         left: 50%;
@@ -489,7 +578,9 @@
         cursor: pointer;
         box-shadow: 0 8px 20px rgba(120, 20, 60, 0.45);
       }
-      #compose-stop.hidden { display: none; }
+      #compose-stop.hidden {
+        display: none;
+      }
       #name-prompt {
         position: fixed;
         inset: 0;
@@ -499,7 +590,9 @@
         justify-content: center;
         background: rgba(40, 20, 90, 0.55);
       }
-      #name-prompt.hidden { display: none; }
+      #name-prompt.hidden {
+        display: none;
+      }
       .name-card {
         display: flex;
         flex-direction: column;
@@ -510,7 +603,13 @@
         background: #fff;
         box-shadow: 0 20px 50px rgba(60, 30, 120, 0.5);
       }
-      .name-q { margin: 0; text-align: center; font-size: 1.2rem; font-weight: 800; color: var(--ink); }
+      .name-q {
+        margin: 0;
+        text-align: center;
+        font-size: 1.2rem;
+        font-weight: 800;
+        color: var(--ink);
+      }
       #name-input {
         font-family: var(--font);
         font-size: 1.2rem;
@@ -520,11 +619,25 @@
         color: var(--ink);
         text-align: center;
       }
-      #name-input:focus { outline: none; border-color: #8a5be0; }
-      .name-actions { display: flex; gap: 0.6rem; }
-      .name-actions .menu-btn { flex: 1 1 0; font-size: 1.05rem; padding: 0.8rem 0.5rem; }
-      #name-save { background: #4cd4a0; }
-      #name-cancel { background: #ff8f6b; }
+      #name-input:focus {
+        outline: none;
+        border-color: #8a5be0;
+      }
+      .name-actions {
+        display: flex;
+        gap: 0.6rem;
+      }
+      .name-actions .menu-btn {
+        flex: 1 1 0;
+        font-size: 1.05rem;
+        padding: 0.8rem 0.5rem;
+      }
+      #name-save {
+        background: #4cd4a0;
+      }
+      #name-cancel {
+        background: #ff8f6b;
+      }
       .path-unit {
         width: 100%;
         box-sizing: border-box;
@@ -556,17 +669,43 @@
         cursor: pointer;
         color: #fff;
         box-shadow: 0 4px 0 rgba(0, 0, 0, 0.14);
-        transition: transform 0.1s ease, box-shadow 0.1s ease;
+        transition:
+          transform 0.1s ease,
+          box-shadow 0.1s ease;
         background: #7c83ff;
       }
-      .path-node:active { transform: translateY(2px); box-shadow: 0 1px 0 rgba(0, 0, 0, 0.14); }
-      .path-node-icon { font-size: 1.2rem; flex: 0 0 auto; }
-      .path-node-text { display: flex; flex-direction: column; min-width: 0; }
-      .path-node-title { font-weight: 800; font-size: 0.98rem; }
-      .path-node-concept { font-weight: 600; font-size: 0.8rem; opacity: 0.92; }
-      .path-node--current { background: #ff7eb3; box-shadow: 0 4px 0 rgba(0, 0, 0, 0.18); }
-      .path-node--passed { background: #4cd4a0; }
-      .path-node--mastered { background: #ffb454; }
+      .path-node:active {
+        transform: translateY(2px);
+        box-shadow: 0 1px 0 rgba(0, 0, 0, 0.14);
+      }
+      .path-node-icon {
+        font-size: 1.2rem;
+        flex: 0 0 auto;
+      }
+      .path-node-text {
+        display: flex;
+        flex-direction: column;
+        min-width: 0;
+      }
+      .path-node-title {
+        font-weight: 800;
+        font-size: 0.98rem;
+      }
+      .path-node-concept {
+        font-weight: 600;
+        font-size: 0.8rem;
+        opacity: 0.92;
+      }
+      .path-node--current {
+        background: #ff7eb3;
+        box-shadow: 0 4px 0 rgba(0, 0, 0, 0.18);
+      }
+      .path-node--passed {
+        background: #4cd4a0;
+      }
+      .path-node--mastered {
+        background: #ffb454;
+      }
       .path-node--locked,
       .path-node--soon {
         background: rgba(124, 92, 255, 0.28);
@@ -578,15 +717,33 @@
         margin-top: 0.6rem;
         background: #6d5dfc;
       }
-      .menu-btn[data-activity='path'] { background: #8ad4ff; }
-      .menu-btn[data-activity='echo'] { background: #4fc3f7; }
-      .menu-btn[data-activity='c-major-up'] { background: #ffa14a; }
-      .menu-btn[data-activity='c-major-updown'] { background: #b07bff; }
-      .menu-btn[data-activity='memory'] { background: #ff9f6b; }
-      .menu-btn[data-activity='notefind'] { background: #5cd0e0; }
-      .menu-btn[data-activity='ear'] { background: #f78fb3; }
-      .menu-btn[data-activity='rhythm'] { background: #ffa64d; }
-      .menu-btn[data-activity='free'] { background: #4cd4a0; }
+      .menu-btn[data-activity='path'] {
+        background: #8ad4ff;
+      }
+      .menu-btn[data-activity='echo'] {
+        background: #4fc3f7;
+      }
+      .menu-btn[data-activity='c-major-up'] {
+        background: #ffa14a;
+      }
+      .menu-btn[data-activity='c-major-updown'] {
+        background: #b07bff;
+      }
+      .menu-btn[data-activity='memory'] {
+        background: #ff9f6b;
+      }
+      .menu-btn[data-activity='notefind'] {
+        background: #5cd0e0;
+      }
+      .menu-btn[data-activity='ear'] {
+        background: #f78fb3;
+      }
+      .menu-btn[data-activity='rhythm'] {
+        background: #ffa64d;
+      }
+      .menu-btn[data-activity='free'] {
+        background: #4cd4a0;
+      }
       #menu .menu-status {
         min-height: 1.2rem;
         max-width: min(86vw, 24rem);
@@ -609,11 +766,18 @@
         text-shadow: 0 1px 4px rgba(40, 20, 90, 0.4);
       }
       @keyframes bob {
-        0%, 100% { transform: translateY(0); }
-        50% { transform: translateY(-8px); }
+        0%,
+        100% {
+          transform: translateY(0);
+        }
+        50% {
+          transform: translateY(-8px);
+        }
       }
       @media (prefers-reduced-motion: reduce) {
-        #menu .menu-title { animation: none; }
+        #menu .menu-title {
+          animation: none;
+        }
       }
     </style>
     <style>
@@ -641,26 +805,71 @@
         <h1 class="menu-title">🎹 Doinu</h1>
         <p class="menu-sub" data-i18n="menu.sub">¡A jugar! 🎶</p>
         <div class="menu-list">
-          <button class="menu-btn" type="button" data-activity="path" data-i18n="act.path">🗺️ Path</button>
-          <button class="menu-btn" type="button" data-activity="melody" data-i18n="act.melody">🎵 Melody</button>
-          <button class="menu-btn" type="button" data-activity="songs" data-i18n="act.songs">🎶 Songs</button>
-          <button class="menu-btn" type="button" data-activity="import" data-i18n="act.import">📂 Load MIDI</button>
-          <button class="menu-btn" type="button" data-activity="compose" data-i18n="act.compose">🎤 Make a melody</button>
-          <button class="menu-btn" type="button" data-activity="practice" data-i18n="act.practice">🐢 Practice (wait)</button>
-          <button class="menu-btn" type="button" data-activity="progress" data-i18n="act.progress">📊 Progress</button>
-          <button class="menu-btn" type="button" data-activity="echo" data-i18n="act.echo">🔁 Echo</button>
-          <button class="menu-btn" type="button" data-activity="memory" data-i18n="act.memory">🧠 Memory</button>
-          <button class="menu-btn" type="button" data-activity="notefind" data-i18n="act.notefind">🔎 Find the note</button>
-          <button class="menu-btn" type="button" data-activity="ear" data-i18n="act.ear">👂 Listen &amp; play</button>
-          <button class="menu-btn" type="button" data-activity="rhythm" data-i18n="act.rhythm">🥁 Tap the beat</button>
-          <button class="menu-btn" type="button" data-activity="c-major-up" data-i18n="act.scaleup">🪜 Scale up</button>
-          <button class="menu-btn" type="button" data-activity="c-major-updown" data-i18n="act.scaleupdown">🎢 Scale up &amp; down</button>
-          <button class="menu-btn" type="button" data-activity="free" data-i18n="act.free">✨ Free play</button>
+          <button class="menu-btn" type="button" data-activity="path" data-i18n="act.path">
+            🗺️ Path
+          </button>
+          <button class="menu-btn" type="button" data-activity="melody" data-i18n="act.melody">
+            🎵 Melody
+          </button>
+          <button class="menu-btn" type="button" data-activity="songs" data-i18n="act.songs">
+            🎶 Songs
+          </button>
+          <button class="menu-btn" type="button" data-activity="import" data-i18n="act.import">
+            📂 Load MIDI
+          </button>
+          <button class="menu-btn" type="button" data-activity="compose" data-i18n="act.compose">
+            🎤 Make a melody
+          </button>
+          <button class="menu-btn" type="button" data-activity="practice" data-i18n="act.practice">
+            🐢 Practice (wait)
+          </button>
+          <button class="menu-btn" type="button" data-activity="progress" data-i18n="act.progress">
+            📊 Progress
+          </button>
+          <button class="menu-btn" type="button" data-activity="echo" data-i18n="act.echo">
+            🔁 Echo
+          </button>
+          <button class="menu-btn" type="button" data-activity="memory" data-i18n="act.memory">
+            🧠 Memory
+          </button>
+          <button class="menu-btn" type="button" data-activity="notefind" data-i18n="act.notefind">
+            🔎 Find the note
+          </button>
+          <button class="menu-btn" type="button" data-activity="ear" data-i18n="act.ear">
+            👂 Listen &amp; play
+          </button>
+          <button class="menu-btn" type="button" data-activity="rhythm" data-i18n="act.rhythm">
+            🥁 Tap the beat
+          </button>
+          <button class="menu-btn" type="button" data-activity="c-major-up" data-i18n="act.scaleup">
+            🪜 Scale up
+          </button>
+          <button
+            class="menu-btn"
+            type="button"
+            data-activity="c-major-updown"
+            data-i18n="act.scaleupdown"
+          >
+            🎢 Scale up &amp; down
+          </button>
+          <button class="menu-btn" type="button" data-activity="free" data-i18n="act.free">
+            ✨ Free play
+          </button>
         </div>
-        <button id="mic-enable" class="menu-btn hidden" type="button" data-i18n="input.micEnable">🎤 Enable microphone</button>
+        <button id="mic-enable" class="menu-btn hidden" type="button" data-i18n="input.micEnable">
+          🎤 Enable microphone
+        </button>
         <button id="input-toggle" class="menu-btn hidden" type="button">🎤 Use microphone</button>
         <button id="wait-toggle" class="menu-btn" type="button">🐢 Wait for the note: ON</button>
-        <button id="mictest-btn" class="menu-btn hidden" type="button" data-activity="mictest" data-i18n="act.mictest">🎤 Mic test</button>
+        <button
+          id="mictest-btn"
+          class="menu-btn hidden"
+          type="button"
+          data-activity="mictest"
+          data-i18n="act.mictest"
+        >
+          🎤 Mic test
+        </button>
       </div>
       <div id="menu-status" class="menu-status"></div>
       <p id="version" class="menu-version"></p>
@@ -686,16 +895,22 @@
         <h1 class="menu-title" data-i18n="progress.title">📊 Progress</h1>
         <p class="menu-sub" data-i18n="progress.sub">How you're doing 🌟</p>
         <div id="progress-content" class="progress-content"></div>
-        <button id="progress-back" class="menu-btn" type="button" data-i18n="nav.back">← Menu</button>
+        <button id="progress-back" class="menu-btn" type="button" data-i18n="nav.back">
+          ← Menu
+        </button>
       </div>
     </div>
     <div id="mymelodies" class="hidden">
       <div class="menu-card">
         <h1 class="menu-title" data-i18n="compose.title">🎤 My melodies</h1>
         <p class="menu-sub" data-i18n="compose.sub">Make your own tune 🎹</p>
-        <button id="compose-record" class="menu-btn" type="button" data-i18n="compose.recordNew">● Record new</button>
+        <button id="compose-record" class="menu-btn" type="button" data-i18n="compose.recordNew">
+          ● Record new
+        </button>
         <div id="melody-list" class="menu-list"></div>
-        <button id="mymelodies-back" class="menu-btn" type="button" data-i18n="nav.back">← Menu</button>
+        <button id="mymelodies-back" class="menu-btn" type="button" data-i18n="nav.back">
+          ← Menu
+        </button>
       </div>
     </div>
     <div id="name-prompt" class="hidden">
@@ -703,8 +918,12 @@
         <p class="name-q" data-i18n="compose.namePrompt">What's your melody called?</p>
         <input id="name-input" type="text" maxlength="40" autocomplete="off" />
         <div class="name-actions">
-          <button id="name-save" class="menu-btn" type="button" data-i18n="compose.save">💾 Save</button>
-          <button id="name-cancel" class="menu-btn" type="button" data-i18n="compose.cancel">✗ Cancel</button>
+          <button id="name-save" class="menu-btn" type="button" data-i18n="compose.save">
+            💾 Save
+          </button>
+          <button id="name-cancel" class="menu-btn" type="button" data-i18n="compose.cancel">
+            ✗ Cancel
+          </button>
         </div>
       </div>
     </div>
@@ -714,12 +933,20 @@
         <p class="menu-sub" data-i18n="mictest.sub">See what the mic hears 🎧</p>
         <div id="mictest-note">—</div>
         <div id="mictest-state" data-i18n="mictest.quiet">Quiet</div>
-        <div id="mictest-meter"><div id="mictest-level"></div><div id="mictest-gate"></div></div>
-        <label id="mictest-sens"><span data-i18n="mictest.sensitivity">Sensitivity</span>
+        <div id="mictest-meter">
+          <div id="mictest-level"></div>
+          <div id="mictest-gate"></div>
+        </div>
+        <label id="mictest-sens"
+          ><span data-i18n="mictest.sensitivity">Sensitivity</span>
           <input id="mictest-slider" type="range" min="0" max="100" value="86" />
         </label>
-        <button id="mictest-calibrate" class="menu-btn" type="button" data-i18n="mictest.calibrate">🤫 Calibrate (2s quiet)</button>
-        <button id="mictest-back" class="menu-btn" type="button" data-i18n="nav.back">← Menu</button>
+        <button id="mictest-calibrate" class="menu-btn" type="button" data-i18n="mictest.calibrate">
+          🤫 Calibrate (2s quiet)
+        </button>
+        <button id="mictest-back" class="menu-btn" type="button" data-i18n="nav.back">
+          ← Menu
+        </button>
       </div>
     </div>
     <button id="compose-stop" class="hidden" type="button" data-i18n="compose.stop">■ Stop</button>
@@ -728,7 +955,16 @@
       id="midi-file"
       type="file"
       accept=".mid,.midi"
-      style="position: absolute; width: 1px; height: 1px; padding: 0; margin: -1px; overflow: hidden; clip: rect(0 0 0 0); border: 0;"
+      style="
+        position: absolute;
+        width: 1px;
+        height: 1px;
+        padding: 0;
+        margin: -1px;
+        overflow: hidden;
+        clip: rect(0 0 0 0);
+        border: 0;
+      "
     />
     <script type="module" src="/src/main.ts"></script>
   </body>

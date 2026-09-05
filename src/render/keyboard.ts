@@ -72,15 +72,19 @@ export function keyRect(
   const whiteWidth = canvasWidth / whites.length
 
   if (!isBlackKey(midi)) {
-    const w = whites.find(k => k.midi === midi)
+    const w = whites.find((k) => k.midi === midi)
     if (!w) return null
     return { x: w.index * whiteWidth, width: whiteWidth, isBlack: false }
   }
   // A black key sits between the white key below it (midi-1) and the next.
-  const leftWhite = whites.find(k => k.midi === midi - 1)
+  const leftWhite = whites.find((k) => k.midi === midi - 1)
   if (!leftWhite) return null
   const blackWidth = whiteWidth * 0.6
-  return { x: (leftWhite.index + 1) * whiteWidth - blackWidth / 2, width: blackWidth, isBlack: true }
+  return {
+    x: (leftWhite.index + 1) * whiteWidth - blackWidth / 2,
+    width: blackWidth,
+    isBlack: true,
+  }
 }
 
 export class Keyboard {

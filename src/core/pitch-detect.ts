@@ -19,7 +19,11 @@ export interface PitchOptions {
 }
 
 /** Detect the fundamental frequency (Hz) of a time-domain frame, or null if none. */
-export function detectPitchHz(buf: Float32Array, sampleRate: number, opts: PitchOptions = {}): number | null {
+export function detectPitchHz(
+  buf: Float32Array,
+  sampleRate: number,
+  opts: PitchOptions = {},
+): number | null {
   const minRms = opts.minRms ?? 0.01
   const threshold = opts.threshold ?? 0.15
   const minHz = opts.minHz ?? 65
@@ -90,7 +94,11 @@ export function freqToMidi(hz: number): number {
 }
 
 /** Convenience: detect a frame straight to a MIDI note, or null. */
-export function detectPitchMidi(buf: Float32Array, sampleRate: number, opts?: PitchOptions): number | null {
+export function detectPitchMidi(
+  buf: Float32Array,
+  sampleRate: number,
+  opts?: PitchOptions,
+): number | null {
   const hz = detectPitchHz(buf, sampleRate, opts)
   return hz === null ? null : freqToMidi(hz)
 }
@@ -109,7 +117,11 @@ export interface FrameAnalysis {
 }
 
 /** Everything the live mic readout needs from one frame: loudness + pitch. */
-export function analyzeFrame(buf: Float32Array, sampleRate: number, opts?: PitchOptions): FrameAnalysis {
+export function analyzeFrame(
+  buf: Float32Array,
+  sampleRate: number,
+  opts?: PitchOptions,
+): FrameAnalysis {
   const hz = detectPitchHz(buf, sampleRate, opts)
   return { rms: rms(buf), hz, midi: hz === null ? null : freqToMidi(hz) }
 }

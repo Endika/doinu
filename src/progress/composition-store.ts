@@ -40,7 +40,7 @@ export class CompositionStore {
   }
 
   remove(id: string): void {
-    this.storage.setItem(STORAGE_KEY, JSON.stringify(this.all().filter(c => c.id !== id)))
+    this.storage.setItem(STORAGE_KEY, JSON.stringify(this.all().filter((c) => c.id !== id)))
   }
 }
 
