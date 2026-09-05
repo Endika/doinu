@@ -16,7 +16,13 @@ export function lessonNeedsPolyphony(lesson: PathLesson): boolean {
  * - `passed`   — cleared at least once (unlocks the next), not yet mastered.
  * - `mastered` — passed consistently (3 sessions) → earns the ⭐.
  */
-export enum PathLessonState { Locked = 'locked', Current = 'current', Passed = 'passed', Mastered = 'mastered', Soon = 'soon' }
+export enum PathLessonState {
+  Locked = 'locked',
+  Current = 'current',
+  Passed = 'passed',
+  Mastered = 'mastered',
+  Soon = 'soon',
+}
 
 export interface PathLessonProgress {
   id: string
@@ -25,7 +31,7 @@ export interface PathLessonProgress {
 
 /** A lesson is "passed" once any recorded session met its accuracy bar. */
 export function isPassed(sessions: Session[], passAccuracy: number): boolean {
-  return sessions.some(s => s.accuracy >= passAccuracy)
+  return sessions.some((s) => s.accuracy >= passAccuracy)
 }
 
 /**
@@ -40,7 +46,7 @@ export function buildPathProgress(
   findThresholdMs?: number,
 ): PathLessonProgress[] {
   let reachable = true // the first buildable lesson is reachable
-  return lessons.map(lesson => {
+  return lessons.map((lesson) => {
     if (lesson.milestone > 1) {
       return { id: lesson.id, state: PathLessonState.Soon }
     }

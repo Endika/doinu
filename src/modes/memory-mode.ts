@@ -8,7 +8,11 @@
  * picker is injected (random in the app, deterministic in tests).
  */
 
-export enum PressResult { Correct = 'correct', Wrong = 'wrong', Complete = 'complete' }
+export enum PressResult {
+  Correct = 'correct',
+  Wrong = 'wrong',
+  Complete = 'complete',
+}
 
 /** White keys of one octave around middle C — the note bank for memory. */
 export const MEMORY_NOTES = [60, 62, 64, 65, 67, 69, 71, 72]

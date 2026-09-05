@@ -8,7 +8,10 @@
  * is measured by the controller, not here.
  */
 
-export enum PressResult { Correct = 'correct', Wrong = 'wrong' }
+export enum PressResult {
+  Correct = 'correct',
+  Wrong = 'wrong',
+}
 
 /** White keys of one octave around middle C — the note bank for find-the-note. */
 export const NOTE_FIND_NOTES = [60, 62, 64, 65, 67, 69, 71, 72]

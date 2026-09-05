@@ -1,5 +1,11 @@
 import { describe, it, expect } from 'vitest'
-import { detectPitchHz, detectPitchMidi, freqToMidi, rms, analyzeFrame } from '../src/core/pitch-detect'
+import {
+  detectPitchHz,
+  detectPitchMidi,
+  freqToMidi,
+  rms,
+  analyzeFrame,
+} from '../src/core/pitch-detect'
 
 const SR = 44100
 const N = 2048 // ~46 ms frame at 44.1 kHz (what an AnalyserNode fftSize=2048 gives)
@@ -15,7 +21,10 @@ function tone(freqHz: number, n = N, sr = SR): Float32Array {
   const buf = new Float32Array(n)
   for (let i = 0; i < n; i++) {
     const t = i / sr
-    buf[i] = 0.5 * Math.sin(2 * Math.PI * freqHz * t) + 0.25 * Math.sin(2 * Math.PI * 2 * freqHz * t) + 0.12 * Math.sin(2 * Math.PI * 3 * freqHz * t)
+    buf[i] =
+      0.5 * Math.sin(2 * Math.PI * freqHz * t) +
+      0.25 * Math.sin(2 * Math.PI * 2 * freqHz * t) +
+      0.12 * Math.sin(2 * Math.PI * 3 * freqHz * t)
   }
   return buf
 }

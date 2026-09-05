@@ -5,9 +5,10 @@ describe('scoring', () => {
     const s = new Scorer()
     s.record({ result: ScoreResult.Hit, timingDevMs: 20 })
     s.record({ result: ScoreResult.Hit, timingDevMs: 60 })
-    s.record({ result: ScoreResult.Wrong }); s.record({ result: ScoreResult.Missed })
+    s.record({ result: ScoreResult.Wrong })
+    s.record({ result: ScoreResult.Missed })
     const m = s.summary()
-    expect(m.accuracy).toBeCloseTo(0.5)      // 2 hits / 4 targets (hits + wrong + missed)
+    expect(m.accuracy).toBeCloseTo(0.5) // 2 hits / 4 targets (hits + wrong + missed)
     expect(m.meanTimingDevMs).toBeCloseTo(40) // mean of |20|,|60|
   })
   it('tracks note-find latency (first-correct after target shown)', () => {

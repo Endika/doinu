@@ -3,12 +3,13 @@ import { NoteFindGame, NOTE_FIND_NOTES, PressResult } from '../src/modes/note-fi
 
 describe('NoteFindGame', () => {
   it('advances on a correct press and tracks accuracy', () => {
-    const targets = [60, 64, 67]; let i = 0
+    const targets = [60, 64, 67]
+    let i = 0
     const g = new NoteFindGame(() => targets[i++ % targets.length], 3)
     expect(g.target).toBe(60)
     expect(g.press(60)).toBe(PressResult.Correct)
     expect(g.target).toBe(64)
-    expect(g.press(62)).toBe(PressResult.Wrong)   // wrong, target unchanged
+    expect(g.press(62)).toBe(PressResult.Wrong) // wrong, target unchanged
     expect(g.target).toBe(64)
     expect(g.press(64)).toBe(PressResult.Correct)
     expect(g.press(67)).toBe(PressResult.Correct) // 3rd hit → done

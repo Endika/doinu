@@ -14,16 +14,25 @@ interface Key {
 
 // Twelve chromatic keys from middle C up, so every study fits the 61-key range.
 const KEYS: Key[] = [
-  { name: 'C', root: 60 }, { name: 'C#', root: 61 }, { name: 'D', root: 62 }, { name: 'E♭', root: 63 },
-  { name: 'E', root: 64 }, { name: 'F', root: 65 }, { name: 'F#', root: 66 }, { name: 'G', root: 67 },
-  { name: 'A♭', root: 68 }, { name: 'A', root: 69 }, { name: 'B♭', root: 70 }, { name: 'B', root: 71 },
+  { name: 'C', root: 60 },
+  { name: 'C#', root: 61 },
+  { name: 'D', root: 62 },
+  { name: 'E♭', root: 63 },
+  { name: 'E', root: 64 },
+  { name: 'F', root: 65 },
+  { name: 'F#', root: 66 },
+  { name: 'G', root: 67 },
+  { name: 'A♭', root: 68 },
+  { name: 'A', root: 69 },
+  { name: 'B♭', root: 70 },
+  { name: 'B', root: 71 },
 ]
 
 const piece = (id: string, title: string, midis: number[], bpm = 90, dur = 0.5): Song => ({
   id,
   title,
   bpm,
-  right: midis.map(midi => ({ midi, dur })),
+  right: midis.map((midi) => ({ midi, dur })),
 })
 
 /** Append the descent of a line (without repeating its top note). */
@@ -36,7 +45,7 @@ const arpeggio = (root: number): number[] => {
 }
 
 /** Penta (do-re-mi-fa-sol) up and back down. */
-const fiveFinger = (root: number): number[] => upDown([0, 2, 4, 5, 7].map(i => root + i))
+const fiveFinger = (root: number): number[] => upDown([0, 2, 4, 5, 7].map((i) => root + i))
 
 /** A simple broken-chord pattern over one bar. */
 const brokenChord = (root: number): number[] => {

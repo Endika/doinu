@@ -1,7 +1,11 @@
 import type { Session } from './metrics-store'
 import type { Exercise } from '../content/curriculum'
 
-export enum MasteryState { Locked = 'locked', InProgress = 'inProgress', Mastered = 'mastered' }
+export enum MasteryState {
+  Locked = 'locked',
+  InProgress = 'inProgress',
+  Mastered = 'mastered',
+}
 export const DEFAULT_FIND_THRESHOLD_MS = 2000
 export const MASTERY_WINDOW = 3 // consecutive recent sessions required
 

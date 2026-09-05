@@ -103,7 +103,7 @@ export class MicInputAdapter implements InputAdapter {
   stop(): void {
     this.running = false
     cancelAnimationFrame(this.rafId)
-    this.stream?.getTracks().forEach(t => t.stop())
+    this.stream?.getTracks().forEach((t) => t.stop())
     void this.ctx?.close()
     this.ctx = null
     this.stream = null

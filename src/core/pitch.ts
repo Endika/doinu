@@ -6,12 +6,33 @@
  */
 
 // Low octave (left-hand / bass).
-export const C3 = 48, D3 = 50, E3 = 52, F3 = 53, G3 = 55, A3 = 57, B3 = 59
+export const C3 = 48,
+  D3 = 50,
+  E3 = 52,
+  F3 = 53,
+  G3 = 55,
+  A3 = 57,
+  B3 = 59
 // Middle octave (the home of most lessons). Sharps included where used.
-export const C4 = 60, Cs4 = 61, D4 = 62, Ds4 = 63, E4 = 64, F4 = 65, Fs4 = 66
-export const G4 = 67, Gs4 = 68, A4 = 69, Bb4 = 70, B4 = 71
+export const C4 = 60,
+  Cs4 = 61,
+  D4 = 62,
+  Ds4 = 63,
+  E4 = 64,
+  F4 = 65,
+  Fs4 = 66
+export const G4 = 67,
+  Gs4 = 68,
+  A4 = 69,
+  Bb4 = 70,
+  B4 = 71
 // Upper octave.
-export const C5 = 72, D5 = 74, E5 = 76, F5 = 77, Fs5 = 78, G5 = 79
+export const C5 = 72,
+  D5 = 74,
+  E5 = 76,
+  F5 = 77,
+  Fs5 = 78,
+  G5 = 79
 
 // Interval recipes (semitone offsets from the root).
 export const MAJOR_TRIAD = [0, 4, 7]
@@ -21,10 +42,10 @@ export const NATURAL_MINOR_SCALE = [0, 2, 3, 5, 7, 8, 10, 12]
 
 /** Build a chord's midi notes from a root and an interval recipe (defaults to a major triad). */
 export function chord(rootMidi: number, intervals: number[] = MAJOR_TRIAD): number[] {
-  return intervals.map(i => rootMidi + i)
+  return intervals.map((i) => rootMidi + i)
 }
 
 /** Build a scale's midi notes from a root and an interval recipe (defaults to a major scale). */
 export function scale(rootMidi: number, intervals: number[] = MAJOR_SCALE): number[] {
-  return intervals.map(i => rootMidi + i)
+  return intervals.map((i) => rootMidi + i)
 }

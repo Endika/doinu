@@ -13,7 +13,11 @@ import { ChordMode } from '../modes/chord-mode'
 import { ScaleMode, SCALES } from '../modes/scale-mode'
 import { SequenceMatcher, ECHO_PHRASES } from '../modes/echo-mode'
 import { MemoryGame, MEMORY_NOTES, PressResult as MemoryPressResult } from '../modes/memory-mode'
-import { NoteFindGame, NOTE_FIND_NOTES, PressResult as NoteFindPressResult } from '../modes/note-find-mode'
+import {
+  NoteFindGame,
+  NOTE_FIND_NOTES,
+  PressResult as NoteFindPressResult,
+} from '../modes/note-find-mode'
 import { scoreRhythm, beatTimes } from '../modes/rhythm'
 import type { Mode } from '../modes/mode'
 import { Synth } from '../audio/synth'
@@ -43,13 +47,17 @@ import { resolveLocale, createI18n, Locale, type MessageKey } from '../i18n'
  * DOM. `bootstrap` reassigns it to the live i18n instance once the locale is
  * resolved from `navigator.language` + the stored override.
  */
-let t: (key: MessageKey) => string = key => createI18n(Locale.En).t(key)
+let t: (key: MessageKey) => string = (key) => createI18n(Locale.En).t(key)
 
 /** Build-time app version, injected by Vite from package.json. */
 declare const __APP_VERSION__: string
 
 /** Phases of the listen-then-repeat exercises (echo, memory). */
-enum Phase { Listen = 'listen', Repeat = 'repeat', Done = 'done' }
+enum Phase {
+  Listen = 'listen',
+  Repeat = 'repeat',
+  Done = 'done',
+}
 
 /** Hit-window half-width (ms) shared by the engine matcher and the on-screen guide. */
 const WINDOW_MS = 150
@@ -63,14 +71,21 @@ const PX_PER_MS = 0.15
  */
 class SongTimeAdapter implements InputAdapter {
   capabilities: Capabilities
-  constructor(private readonly inner: InputAdapter, private readonly origin: number) {
+  constructor(
+    private readonly inner: InputAdapter,
+    private readonly origin: number,
+  ) {
     this.capabilities = inner.capabilities
   }
   onEvent(cb: (e: InputEvent) => void): void {
-    this.inner.onEvent(e => cb({ ...e, time: e.time - this.origin }))
+    this.inner.onEvent((e) => cb({ ...e, time: e.time - this.origin }))
   }
-  start(): Promise<void> { return this.inner.start() }
-  stop(): void { this.inner.stop() }
+  start(): Promise<void> {
+    return this.inner.start()
+  }
+  stop(): void {
+    this.inner.stop()
+  }
 }
 
 /**
@@ -81,14 +96,21 @@ class SongTimeAdapter implements InputAdapter {
  */
 class ClockStampAdapter implements InputAdapter {
   capabilities: Capabilities
-  constructor(private readonly inner: InputAdapter, private readonly clock: Clock) {
+  constructor(
+    private readonly inner: InputAdapter,
+    private readonly clock: Clock,
+  ) {
     this.capabilities = inner.capabilities
   }
   onEvent(cb: (e: InputEvent) => void): void {
-    this.inner.onEvent(e => cb({ ...e, time: this.clock.now() }))
+    this.inner.onEvent((e) => cb({ ...e, time: this.clock.now() }))
   }
-  start(): Promise<void> { return this.inner.start() }
-  stop(): void { this.inner.stop() }
+  start(): Promise<void> {
+    return this.inner.start()
+  }
+  stop(): void {
+    this.inner.stop()
+  }
 }
 
 export interface Env {
@@ -126,13 +148,13 @@ export function waitEnabled(stored: string | null): boolean {
  * index 0 is never locked, so there is always a non-locked entry).
  */
 export function pickCurrentExerciseId(map: MasteryEntry[]): string {
-  const inProgress = map.find(e => e.state === MasteryState.InProgress)
+  const inProgress = map.find((e) => e.state === MasteryState.InProgress)
   if (inProgress) return inProgress.exerciseId
   return map[map.length - 1].exerciseId
 }
 
 function findExercise(id: string): Exercise {
-  return CURRICULUM.find(e => e.id === id) ?? CURRICULUM[0]
+  return CURRICULUM.find((e) => e.id === id) ?? CURRICULUM[0]
 }
 
 /** Encouraging-but-honest praise scaled to the score (no "Great!" for a 0%). */
@@ -197,7 +219,7 @@ function runChart(
   engine.start()
 
   const lastEndMs = chart.targets.length
-    ? Math.max(...chart.targets.map(t => t.startMs + t.durMs))
+    ? Math.max(...chart.targets.map((t) => t.startMs + t.durMs))
     : 0
 
   let running = true
@@ -263,7 +285,7 @@ function runChartWaiting(
   engine.start()
 
   const lastEndMs = chart.targets.length
-    ? Math.max(...chart.targets.map(t => t.startMs + t.durMs))
+    ? Math.max(...chart.targets.map((t) => t.startMs + t.durMs))
     : 0
 
   let running = true
@@ -275,7 +297,7 @@ function runChartWaiting(
     // The wait: pause at the earliest unplayed note's time until it is played.
     const pending = engine.pendingTargets()
     if (pending.length > 0) {
-      const nextStart = Math.min(...pending.map(t => t.startMs))
+      const nextStart = Math.min(...pending.map((t) => t.startMs))
       if (clock.now() >= nextStart) {
         clock.setTo(nextStart) // clamp the score exactly at the hit line
         clock.pause()
@@ -349,7 +371,7 @@ export function bootstrap(): void {
   // Paint every [data-i18n] element, the toggle label, and the CSS-driven
   // empty-progress message for the current locale.
   const applyI18n = (): void => {
-    document.querySelectorAll<HTMLElement>('[data-i18n]').forEach(el => {
+    document.querySelectorAll<HTMLElement>('[data-i18n]').forEach((el) => {
       const key = el.dataset.i18n as MessageKey | undefined
       if (key) el.textContent = i18n.t(key)
     })
@@ -388,7 +410,9 @@ export function bootstrap(): void {
   // key press sounds. The engine subscribes separately via its own wrapped
   // (song-time) adapter inside runChart — the two listeners coexist.
   const synth = new Synth()
-  selected.onEvent(e => (e.type === InputEventType.On ? synth.noteOn(e.note) : synth.noteOff(e.note)))
+  selected.onEvent((e) =>
+    e.type === InputEventType.On ? synth.noteOn(e.note) : synth.noteOff(e.note),
+  )
 
   // MIDI starts immediately so every activity receives events. The microphone
   // needs a user gesture (getUserMedia + a suspended AudioContext), so it stays
@@ -467,10 +491,10 @@ export function bootstrap(): void {
   ): (() => void) => (waitForNote ? runChartWaiting : runChart)(mode, title, d, onComplete)
 
   const refreshReport = (): void => {
-    const map = buildMasteryMap(CURRICULUM, id => store.sessionsFor(id))
+    const map = buildMasteryMap(CURRICULUM, (id) => store.sessionsFor(id))
     const stateFor = (id: string): MasteryState =>
-      map.find(e => e.exerciseId === id)?.state ?? MasteryState.Locked
-    const report = buildProgressReport(CURRICULUM, id => store.sessionsFor(id), stateFor)
+      map.find((e) => e.exerciseId === id)?.state ?? MasteryState.Locked
+    const report = buildProgressReport(CURRICULUM, (id) => store.sessionsFor(id), stateFor)
     renderProgressReport(reportEl, report)
   }
 
@@ -509,14 +533,14 @@ export function bootstrap(): void {
     const playOne = (id: string): void => {
       if (!alive) return
       const exercise = findExercise(id)
-      stopChart = runChart(new MelodyMode(exercise), exercise.title, deps, engine => {
+      stopChart = runChart(new MelodyMode(exercise), exercise.title, deps, (engine) => {
         if (!alive) return
         store.record({ exerciseId: exercise.id, timestamp: Date.now(), summary: engine.summary() })
         refreshReport()
         if (status) status.textContent = formatSummary(engine.summary())
         timer = window.setTimeout(() => {
           if (!alive) return
-          const nextMap = buildMasteryMap(CURRICULUM, sid => store.sessionsFor(sid))
+          const nextMap = buildMasteryMap(CURRICULUM, (sid) => store.sessionsFor(sid))
           playOne(pickCurrentExerciseId(nextMap))
         }, 2800)
       })
@@ -525,7 +549,7 @@ export function bootstrap(): void {
   }
 
   const resumeMelody = (): void => {
-    const map = buildMasteryMap(CURRICULUM, id => store.sessionsFor(id))
+    const map = buildMasteryMap(CURRICULUM, (id) => store.sessionsFor(id))
     startMelody(pickCurrentExerciseId(map))
   }
 
@@ -546,7 +570,7 @@ export function bootstrap(): void {
     const activeNotes = new Set<number>()
     let running = true
 
-    d.selected.onEvent(e => {
+    d.selected.onEvent((e) => {
       if (!running) return
       if (e.type === InputEventType.On) activeNotes.add(e.note)
       else activeNotes.delete(e.note)
@@ -556,7 +580,8 @@ export function bootstrap(): void {
     sizeCanvas(d.keysCanvas)
     const stageCtx = d.stageCanvas?.getContext('2d') ?? null
     const keysCtx = d.keysCanvas?.getContext('2d') ?? null
-    if (stageCtx && d.stageCanvas) stageCtx.clearRect(0, 0, d.stageCanvas.width, d.stageCanvas.height)
+    if (stageCtx && d.stageCanvas)
+      stageCtx.clearRect(0, 0, d.stageCanvas.width, d.stageCanvas.height)
     const keyboard = new Keyboard(keysCtx)
 
     if (d.status) d.status.textContent = t('st.freePlay')
@@ -603,13 +628,14 @@ export function bootstrap(): void {
     sizeCanvas(d.keysCanvas)
     const stageCtx = d.stageCanvas?.getContext('2d') ?? null
     const keysCtx = d.keysCanvas?.getContext('2d') ?? null
-    if (stageCtx && d.stageCanvas) stageCtx.clearRect(0, 0, d.stageCanvas.width, d.stageCanvas.height)
+    if (stageCtx && d.stageCanvas)
+      stageCtx.clearRect(0, 0, d.stageCanvas.width, d.stageCanvas.height)
     const keyboard = new Keyboard(keysCtx)
 
     // ONE persistent input listener for the whole echo session (guarded by
     // `running`). During REPEAT it feeds the matcher; otherwise it just tracks
     // held notes for the glow.
-    d.selected.onEvent(e => {
+    d.selected.onEvent((e) => {
       if (!running) return
       if (e.type === InputEventType.On) {
         activeNotes.add(e.note)
@@ -629,7 +655,10 @@ export function bootstrap(): void {
       if (!running) return
       if (phase === Phase.Listen) {
         const sounding = listenIndex >= 0 && listenIndex < phrase.notes.length
-        keyboard.draw(new Set(), sounding ? new Set([phrase.notes[listenIndex]]) : new Set<number>())
+        keyboard.draw(
+          new Set(),
+          sounding ? new Set([phrase.notes[listenIndex]]) : new Set<number>(),
+        )
       } else {
         const next =
           phase === Phase.Repeat && matcher && !matcher.done
@@ -664,7 +693,7 @@ export function bootstrap(): void {
       }
       advanceListen()
       s.playSequence(
-        phrase.notes.map(n => ({ midi: n, durMs: phrase.noteDurMs })),
+        phrase.notes.map((n) => ({ midi: n, durMs: phrase.noteDurMs })),
         () => {
           if (!running) return
           listenIndex = -1
@@ -735,12 +764,13 @@ export function bootstrap(): void {
     sizeCanvas(d.keysCanvas)
     const stageCtx = d.stageCanvas?.getContext('2d') ?? null
     const keysCtx = d.keysCanvas?.getContext('2d') ?? null
-    if (stageCtx && d.stageCanvas) stageCtx.clearRect(0, 0, d.stageCanvas.width, d.stageCanvas.height)
+    if (stageCtx && d.stageCanvas)
+      stageCtx.clearRect(0, 0, d.stageCanvas.width, d.stageCanvas.height)
     const keyboard = new Keyboard(keysCtx)
 
     // ONE persistent input listener (guarded by `running`). During REPEAT it
     // feeds the game; otherwise it just tracks held notes for the glow.
-    d.selected.onEvent(e => {
+    d.selected.onEvent((e) => {
       if (!running) return
       if (e.type === InputEventType.On) {
         activeNotes.add(e.note)
@@ -796,7 +826,7 @@ export function bootstrap(): void {
       }
       advanceListen()
       s.playSequence(
-        seq.map(n => ({ midi: n, durMs: 500 })),
+        seq.map((n) => ({ midi: n, durMs: 500 })),
         () => {
           if (!running) return
           listenIndex = -1
@@ -882,14 +912,15 @@ export function bootstrap(): void {
     sizeCanvas(d.keysCanvas)
     const stageCtx = d.stageCanvas?.getContext('2d') ?? null
     const keysCtx = d.keysCanvas?.getContext('2d') ?? null
-    if (stageCtx && d.stageCanvas) stageCtx.clearRect(0, 0, d.stageCanvas.width, d.stageCanvas.height)
+    if (stageCtx && d.stageCanvas)
+      stageCtx.clearRect(0, 0, d.stageCanvas.width, d.stageCanvas.height)
     const keyboard = new Keyboard(keysCtx)
 
     if (d.status) d.status.textContent = t('st.find')
 
     // ONE persistent input listener (guarded by `running`): track held notes for
     // the glow and, on note-ON, test the press against the current target.
-    d.selected.onEvent(e => {
+    d.selected.onEvent((e) => {
       if (!running) return
       if (e.type === InputEventType.On) {
         activeNotes.add(e.note)
@@ -930,7 +961,8 @@ export function bootstrap(): void {
       refreshReport()
       if (d.status) {
         const pct = Math.round(accuracy * 100)
-        d.status.textContent = pct > 0 ? `${praise(pct)} · ${Math.round(meanFindMs)}ms` : praise(pct)
+        d.status.textContent =
+          pct > 0 ? `${praise(pct)} · ${Math.round(meanFindMs)}ms` : praise(pct)
       }
       window.setTimeout(() => {
         if (!running) return
@@ -973,7 +1005,8 @@ export function bootstrap(): void {
     sizeCanvas(d.keysCanvas)
     const stageCtx = d.stageCanvas?.getContext('2d') ?? null
     const keysCtx = d.keysCanvas?.getContext('2d') ?? null
-    if (stageCtx && d.stageCanvas) stageCtx.clearRect(0, 0, d.stageCanvas.width, d.stageCanvas.height)
+    if (stageCtx && d.stageCanvas)
+      stageCtx.clearRect(0, 0, d.stageCanvas.width, d.stageCanvas.height)
     const keyboard = new Keyboard(keysCtx)
 
     const playTarget = (): void => s.playSequence([{ midi: game.target, durMs: 800 }])
@@ -981,7 +1014,7 @@ export function bootstrap(): void {
     if (d.status) d.status.textContent = t('st.listen')
     playTarget()
 
-    d.selected.onEvent(e => {
+    d.selected.onEvent((e) => {
       if (!running) return
       if (e.type === InputEventType.On) {
         activeNotes.add(e.note)
@@ -1065,10 +1098,11 @@ export function bootstrap(): void {
     sizeCanvas(d.keysCanvas)
     const stageCtx = d.stageCanvas?.getContext('2d') ?? null
     const keysCtx = d.keysCanvas?.getContext('2d') ?? null
-    if (stageCtx && d.stageCanvas) stageCtx.clearRect(0, 0, d.stageCanvas.width, d.stageCanvas.height)
+    if (stageCtx && d.stageCanvas)
+      stageCtx.clearRect(0, 0, d.stageCanvas.width, d.stageCanvas.height)
     const keyboard = new Keyboard(keysCtx)
 
-    d.selected.onEvent(e => {
+    d.selected.onEvent((e) => {
       if (!running) return
       if (e.type === InputEventType.On) {
         activeNotes.add(e.note)
@@ -1111,9 +1145,12 @@ export function bootstrap(): void {
       })
       const endAt = beats[beats.length - 1] + WINDOW_MS + 150
       timeouts.push(
-        window.setTimeout(() => {
-          if (running) finishRound()
-        }, Math.max(0, endAt - performance.now())),
+        window.setTimeout(
+          () => {
+            if (running) finishRound()
+          },
+          Math.max(0, endAt - performance.now()),
+        ),
       )
     }
 
@@ -1123,7 +1160,12 @@ export function bootstrap(): void {
       store.record({
         exerciseId: 'rhythm',
         timestamp: Date.now(),
-        summary: { accuracy: r.accuracy, meanTimingDevMs: r.meanDevMs, meanFindMs: 0, tempoBpm: BPM },
+        summary: {
+          accuracy: r.accuracy,
+          meanTimingDevMs: r.meanDevMs,
+          meanFindMs: 0,
+          tempoBpm: BPM,
+        },
       })
       refreshReport()
       if (d.status) d.status.textContent = praise(Math.round(r.accuracy * 100))
@@ -1169,8 +1211,8 @@ export function bootstrap(): void {
     backBtn?.addEventListener('click', exit)
     backBtn?.classList.remove('hidden')
 
-    const spec = SCALES.find(s => s.id === scaleId) ?? SCALES[0]
-    stopChart = runChart(new ScaleMode(spec), spec.title, deps, engine => {
+    const spec = SCALES.find((s) => s.id === scaleId) ?? SCALES[0]
+    stopChart = runChart(new ScaleMode(spec), spec.title, deps, (engine) => {
       if (!alive) return
       store.record({ exerciseId: spec.id, timestamp: Date.now(), summary: engine.summary() })
       refreshReport()
@@ -1204,7 +1246,7 @@ export function bootstrap(): void {
     const playOne = (id: string): void => {
       if (!alive) return
       const exercise = findExercise(id)
-      stopRun = runPlayback(new MelodyMode(exercise), `${exercise.title} 🐢`, deps, engine => {
+      stopRun = runPlayback(new MelodyMode(exercise), `${exercise.title} 🐢`, deps, (engine) => {
         if (!alive) return
         store.record({
           exerciseId: `practice:${exercise.id}`,
@@ -1215,7 +1257,7 @@ export function bootstrap(): void {
         if (status) status.textContent = formatSummary(engine.summary())
         timer = window.setTimeout(() => {
           if (!alive) return
-          const nextMap = buildMasteryMap(CURRICULUM, sid => store.sessionsFor(sid))
+          const nextMap = buildMasteryMap(CURRICULUM, (sid) => store.sessionsFor(sid))
           playOne(pickCurrentExerciseId(nextMap))
         }, 2500)
       })
@@ -1225,7 +1267,7 @@ export function bootstrap(): void {
   }
 
   const resumePractice = (): void => {
-    const map = buildMasteryMap(CURRICULUM, id => store.sessionsFor(id))
+    const map = buildMasteryMap(CURRICULUM, (id) => store.sessionsFor(id))
     startPractice(pickCurrentExerciseId(map))
   }
 
@@ -1261,7 +1303,7 @@ export function bootstrap(): void {
     backBtn?.addEventListener('click', exit)
     backBtn?.classList.remove('hidden')
 
-    stopRun = runPlayback(new SongMode(song, sel), song.title, deps, engine => {
+    stopRun = runPlayback(new SongMode(song, sel), song.title, deps, (engine) => {
       if (!alive) return
       store.record({
         exerciseId: `song:${song.id}:${sel}`,
@@ -1337,17 +1379,39 @@ export function bootstrap(): void {
 
   const lessonMode = (lesson: PathLesson): Mode => {
     if (lesson.kind === LessonKind.Chord) {
-      return new ChordMode({ id: lesson.id, title: lesson.title, bpm: lesson.bpm, chords: lesson.chords ?? [], passAccuracy: lesson.passAccuracy })
+      return new ChordMode({
+        id: lesson.id,
+        title: lesson.title,
+        bpm: lesson.bpm,
+        chords: lesson.chords ?? [],
+        passAccuracy: lesson.passAccuracy,
+      })
     }
     if (lesson.kind === LessonKind.TwoHands) {
-      const song: Song = { id: lesson.id, title: lesson.title, bpm: lesson.bpm, right: lesson.right ?? [], left: lesson.left }
+      const song: Song = {
+        id: lesson.id,
+        title: lesson.title,
+        bpm: lesson.bpm,
+        right: lesson.right ?? [],
+        left: lesson.left,
+      }
       return new SongMode(song, HandSelection.Both)
     }
-    return new MelodyMode({ id: lesson.id, title: lesson.title, bpm: lesson.bpm, notes: lesson.notes ?? [], passAccuracy: lesson.passAccuracy })
+    return new MelodyMode({
+      id: lesson.id,
+      title: lesson.title,
+      bpm: lesson.bpm,
+      notes: lesson.notes ?? [],
+      passAccuracy: lesson.passAccuracy,
+    })
   }
 
   const PATH_ICON: Record<PathLessonState, string> = {
-    current: '▶', passed: '✓', mastered: '⭐', locked: '🔒', soon: '🔒',
+    current: '▶',
+    passed: '✓',
+    mastered: '⭐',
+    locked: '🔒',
+    soon: '🔒',
   }
 
   const showPath = (): void => {
@@ -1379,7 +1443,7 @@ export function bootstrap(): void {
 
     if (status) status.textContent = t('st.read')
 
-    deps.selected.onEvent(e => {
+    deps.selected.onEvent((e) => {
       if (!running) return
       if (e.type === InputEventType.On) {
         activeNotes.add(e.note)
@@ -1426,7 +1490,8 @@ export function bootstrap(): void {
       if (!running) return
       running = false
       cancelAnimationFrame(rafId)
-      if (stageCtx && deps.stageCanvas) stageCtx.clearRect(0, 0, deps.stageCanvas.width, deps.stageCanvas.height)
+      if (stageCtx && deps.stageCanvas)
+        stageCtx.clearRect(0, 0, deps.stageCanvas.width, deps.stageCanvas.height)
       backBtn?.removeEventListener('click', exit)
       backBtn?.classList.add('hidden')
       if (status) status.textContent = ''
@@ -1462,9 +1527,13 @@ export function bootstrap(): void {
     backBtn?.addEventListener('click', exit)
     backBtn?.classList.remove('hidden')
 
-    stopRun = runPlayback(lessonMode(lesson), lesson.title, deps, engine => {
+    stopRun = runPlayback(lessonMode(lesson), lesson.title, deps, (engine) => {
       if (!alive) return
-      store.record({ exerciseId: `path:${lesson.id}`, timestamp: Date.now(), summary: engine.summary() })
+      store.record({
+        exerciseId: `path:${lesson.id}`,
+        timestamp: Date.now(),
+        summary: engine.summary(),
+      })
       refreshReport()
       if (status) status.textContent = formatSummary(engine.summary())
       timer = window.setTimeout(() => exit(), 2800)
@@ -1473,9 +1542,9 @@ export function bootstrap(): void {
 
   function renderPath(): void {
     if (!pathList) return
-    const progress = buildPathProgress(PATH_LESSONS, id => store.sessionsFor(`path:${id}`))
+    const progress = buildPathProgress(PATH_LESSONS, (id) => store.sessionsFor(`path:${id}`))
     const stateOf = (id: string): PathLessonState =>
-      progress.find(p => p.id === id)?.state ?? PathLessonState.Locked
+      progress.find((p) => p.id === id)?.state ?? PathLessonState.Locked
 
     pathList.replaceChildren()
     for (const unit of PATH) {
@@ -1492,7 +1561,10 @@ export function bootstrap(): void {
         // MIDI-only and non-launchable so wait mode never hangs on a 2nd note.
         const midiOnly = !selected.capabilities.polyphonic && lessonNeedsPolyphony(lesson)
         const launchable =
-          !midiOnly && (st === PathLessonState.Current || st === PathLessonState.Passed || st === PathLessonState.Mastered)
+          !midiOnly &&
+          (st === PathLessonState.Current ||
+            st === PathLessonState.Passed ||
+            st === PathLessonState.Mastered)
         const node = document.createElement('button')
         node.type = 'button'
         node.className = `path-node path-node--${midiOnly ? 'locked' : st}`
@@ -1510,7 +1582,11 @@ export function bootstrap(): void {
         title.textContent = lesson.title
         const concept = document.createElement('span')
         concept.className = 'path-node-concept'
-        concept.textContent = midiOnly ? t('path.midiOnly') : st === PathLessonState.Soon ? t('path.soon') : lesson.concept
+        concept.textContent = midiOnly
+          ? t('path.midiOnly')
+          : st === PathLessonState.Soon
+            ? t('path.soon')
+            : lesson.concept
         text.appendChild(title)
         text.appendChild(concept)
         node.appendChild(text)
@@ -1567,9 +1643,13 @@ export function bootstrap(): void {
     }
     backBtn?.addEventListener('click', exit)
     backBtn?.classList.remove('hidden')
-    stopRun = runPlayback(chartMode(compositionChart(c.notes)), c.name, deps, engine => {
+    stopRun = runPlayback(chartMode(compositionChart(c.notes)), c.name, deps, (engine) => {
       if (!alive) return
-      store.record({ exerciseId: `compose:${c.id}`, timestamp: Date.now(), summary: engine.summary() })
+      store.record({
+        exerciseId: `compose:${c.id}`,
+        timestamp: Date.now(),
+        summary: engine.summary(),
+      })
       refreshReport()
       if (status) status.textContent = formatSummary(engine.summary())
       timer = window.setTimeout(() => exit(), 2500)
@@ -1658,12 +1738,13 @@ export function bootstrap(): void {
     sizeCanvas(deps.keysCanvas)
     const stageCtx = deps.stageCanvas?.getContext('2d') ?? null
     const keysCtx = deps.keysCanvas?.getContext('2d') ?? null
-    if (stageCtx && deps.stageCanvas) stageCtx.clearRect(0, 0, deps.stageCanvas.width, deps.stageCanvas.height)
+    if (stageCtx && deps.stageCanvas)
+      stageCtx.clearRect(0, 0, deps.stageCanvas.width, deps.stageCanvas.height)
     const keyboard = new Keyboard(keysCtx)
 
     if (status) status.textContent = t('compose.recording')
 
-    deps.selected.onEvent(e => {
+    deps.selected.onEvent((e) => {
       if (!running) return
       recorder.feed(e)
       if (e.type === InputEventType.On) activeNotes.add(e.note)
@@ -1740,7 +1821,7 @@ export function bootstrap(): void {
     backBtn?.classList.remove('hidden')
 
     const chart = filterChartByHand(imported.chart, HandSelection.Both)
-    stopRun = runPlayback(chartMode(chart), imported.title, deps, engine => {
+    stopRun = runPlayback(chartMode(chart), imported.title, deps, (engine) => {
       if (!alive) return
       store.record({ exerciseId: 'import', timestamp: Date.now(), summary: engine.summary() })
       refreshReport()
@@ -1760,7 +1841,7 @@ export function bootstrap(): void {
     if (!file) return
     void file
       .arrayBuffer()
-      .then(buffer => {
+      .then((buffer) => {
         try {
           const imported = parseMidi(buffer, file.name.replace(/\.midi?$/i, ''))
           playImported(imported)
@@ -1810,7 +1891,8 @@ export function bootstrap(): void {
     const micTestBack = document.getElementById('mictest-back')
 
     const NOTE_NAMES = ['C', 'C#', 'D', 'D#', 'E', 'F', 'F#', 'G', 'G#', 'A', 'A#', 'B']
-    const midiName = (m: number): string => `${NOTE_NAMES[((m % 12) + 12) % 12]}${Math.floor(m / 12) - 1}`
+    const midiName = (m: number): string =>
+      `${NOTE_NAMES[((m % 12) + 12) % 12]}${Math.floor(m / 12) - 1}`
     const METER_MAX = 0.12
     const sliderToGate = (s: number): number => 0.002 + (1 - s / 100) * 0.058
     const gateToSlider = (g: number): number => Math.round((1 - (g - 0.002) / 0.058) * 100)
@@ -1819,7 +1901,7 @@ export function bootstrap(): void {
     let calibrating = false
     let calibSamples: number[] = []
 
-    mic.onFrame(f => {
+    mic.onFrame((f) => {
       if (!active) return
       if (calibrating) {
         calibSamples.push(f.rms)
@@ -1828,7 +1910,13 @@ export function bootstrap(): void {
       if (noteEl) noteEl.textContent = f.midi !== null ? midiName(f.midi) : '—'
       if (levelEl) levelEl.style.width = `${Math.min(100, (f.rms / METER_MAX) * 100)}%`
       if (gateEl) gateEl.style.left = `${Math.min(100, (f.gate / METER_MAX) * 100)}%`
-      if (stateEl) stateEl.textContent = f.rms < f.gate ? t('mictest.quiet') : f.midi !== null ? t('mictest.detecting') : t('mictest.noise')
+      if (stateEl)
+        stateEl.textContent =
+          f.rms < f.gate
+            ? t('mictest.quiet')
+            : f.midi !== null
+              ? t('mictest.detecting')
+              : t('mictest.noise')
     })
 
     slider?.addEventListener('input', () => mic.setSensitivity(sliderToGate(Number(slider.value))))
@@ -1857,7 +1945,14 @@ export function bootstrap(): void {
     showMicTest = (): void => {
       active = true
       synth.resume()
-      void mic.start().then(() => { noInput = false }).catch(() => { /* mic denied */ })
+      void mic
+        .start()
+        .then(() => {
+          noInput = false
+        })
+        .catch(() => {
+          /* mic denied */
+        })
       if (slider) slider.value = String(gateToSlider(mic.sensitivity))
       if (status) status.textContent = ''
       overlay?.classList.remove('hidden')
@@ -1865,7 +1960,7 @@ export function bootstrap(): void {
   }
 
   const buttons = document.querySelectorAll<HTMLButtonElement>('#menu .menu-btn[data-activity]')
-  buttons.forEach(btn => {
+  buttons.forEach((btn) => {
     btn.addEventListener('click', () => {
       const activity = btn.dataset.activity
       if (activity === 'mictest') {

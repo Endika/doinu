@@ -7,7 +7,10 @@
  * languages.
  */
 
-export enum Locale { En = 'en', Es = 'es' }
+export enum Locale {
+  En = 'en',
+  Es = 'es',
+}
 
 const MESSAGES = {
   en: {

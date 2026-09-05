@@ -1,11 +1,25 @@
 import { InputEventType, type InputEvent } from '../core/events'
 import type { Chart, Target } from './chart'
 
-enum Status { Pending = 'pending', Hit = 'hit', Missed = 'missed' }
-export enum MatchOutcome { Hit = 'hit', Wrong = 'wrong', Ignored = 'ignored' }
+enum Status {
+  Pending = 'pending',
+  Hit = 'hit',
+  Missed = 'missed',
+}
+export enum MatchOutcome {
+  Hit = 'hit',
+  Wrong = 'wrong',
+  Ignored = 'ignored',
+}
 
-export interface MatcherOptions { windowMs: number }
-export interface MatchResult { result: MatchOutcome; target?: Target; timingDevMs?: number }
+export interface MatcherOptions {
+  windowMs: number
+}
+export interface MatchResult {
+  result: MatchOutcome
+  target?: Target
+  timingDevMs?: number
+}
 
 export class Matcher {
   private readonly windowMs: number
@@ -15,7 +29,7 @@ export class Matcher {
   constructor(chart: Chart, opts: MatcherOptions) {
     this.windowMs = opts.windowMs
     this.targets = [...chart.targets]
-    this.status = new Map(this.targets.map(t => [t.id, Status.Pending]))
+    this.status = new Map(this.targets.map((t) => [t.id, Status.Pending]))
   }
 
   handle(e: InputEvent): MatchResult {
@@ -52,11 +66,11 @@ export class Matcher {
   }
 
   missed(): Target[] {
-    return this.targets.filter(t => this.status.get(t.id) === Status.Missed)
+    return this.targets.filter((t) => this.status.get(t.id) === Status.Missed)
   }
 
   /** Targets not yet hit and not yet missed — what practice/wait mode waits on. */
   pending(): Target[] {
-    return this.targets.filter(t => this.status.get(t.id) === Status.Pending)
+    return this.targets.filter((t) => this.status.get(t.id) === Status.Pending)
   }
 }
