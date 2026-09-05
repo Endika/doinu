@@ -1,5 +1,12 @@
 # Changelog
 
+## [0.14.10](https://github.com/Endika/doinu/compare/v0.14.9...v0.14.10) (2026-09-05)
+
+
+### Chores
+
+* add prettier and a format:check gate ([fac4899](https://github.com/Endika/doinu/commit/fac4899ef5d5cf62487149e78cd4164aab4f3d15))
+
 ## [0.14.9](https://github.com/Endika/doinu/compare/v0.14.8...v0.14.9) (2026-09-05)
 
 
