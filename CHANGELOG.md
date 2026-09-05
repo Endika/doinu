@@ -1,5 +1,13 @@
 # Changelog
 
+## [0.14.11](https://github.com/Endika/doinu/compare/v0.14.10...v0.14.11) (2026-09-05)
+
+
+### Chores
+
+* **deps-dev:** bump the npm-minor-patch group with 3 updates ([6a07805](https://github.com/Endika/doinu/commit/6a07805d578daa81a9f8fadbe8deaa4e1acbb900))
+* lint the vite config instead of excluding it ([ea71a18](https://github.com/Endika/doinu/commit/ea71a180c77b6950678ddd58e80a91ab322b1292))
+
 ## [0.14.10](https://github.com/Endika/doinu/compare/v0.14.9...v0.14.10) (2026-09-05)
 
 
