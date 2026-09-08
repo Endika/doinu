@@ -13,8 +13,11 @@ jobs:
     steps:
       - id: meta
         uses: dependabot/fetch-metadata@v3
+      # The PAT, not GITHUB_TOKEN: a merge authored by GITHUB_TOKEN is a push that
+      # triggers no workflow at all, so neither release-please nor the deploy would
+      # ever run for an auto-merged bump.
       - if: steps.meta.outputs.update-type == 'version-update:semver-minor' || steps.meta.outputs.update-type == 'version-update:semver-patch'
         env:
-          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          GH_TOKEN: ${{ secrets.RELEASE_PLEASE_TOKEN }}
           PR_URL: ${{ github.event.pull_request.html_url }}
         run: gh pr merge --rebase --auto "$PR_URL"
