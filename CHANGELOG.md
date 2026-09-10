@@ -1,5 +1,12 @@
 # Changelog
 
+## [0.14.15](https://github.com/Endika/doinu/compare/v0.14.14...v0.14.15) (2026-09-10)
+
+
+### Chores
+
+* **deps-dev:** bump vitest from 4.1.11 to 5.0.0 ([dd04da9](https://github.com/Endika/doinu/commit/dd04da95b1ea8ec399fdc461ea9eb6179e1a1386))
+
 ## [0.14.14](https://github.com/Endika/doinu/compare/v0.14.13...v0.14.14) (2026-09-10)
 
 
