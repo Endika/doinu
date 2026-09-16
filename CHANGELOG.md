@@ -1,5 +1,12 @@
 # Changelog
 
+## [0.16.0](https://github.com/Endika/doinu/compare/v0.15.0...v0.16.0) (2026-09-16)
+
+
+### Features
+
+* **ci:** add CodeQL static analysis ([04ffeb0](https://github.com/Endika/doinu/commit/04ffeb0dcee981c042d35088728f381400fc639b))
+
 ## [0.15.0](https://github.com/Endika/doinu/compare/v0.14.15...v0.15.0) (2026-09-16)
 
 
