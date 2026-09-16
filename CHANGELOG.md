@@ -1,5 +1,12 @@
 # Changelog
 
+## [0.15.0](https://github.com/Endika/doinu/compare/v0.14.15...v0.15.0) (2026-09-16)
+
+
+### Features
+
+* **ci:** block PRs that introduce high-severity dependency advisories ([540a8e5](https://github.com/Endika/doinu/commit/540a8e54611817d612fd1fe1adb8a3405695270d))
+
 ## [0.14.15](https://github.com/Endika/doinu/compare/v0.14.14...v0.14.15) (2026-09-10)
 
 
