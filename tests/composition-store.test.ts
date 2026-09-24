@@ -12,6 +12,37 @@ class FakeStorage {
   }
 }
 
+/** Seeds bypass setItem, so a read that writes anything back throws and fails the test. */
+class NoWriteStorage {
+  private map = new Map<string, string>()
+  seed(k: string, v: string): void {
+    this.map.set(k, v)
+  }
+  getItem(k: string): string | null {
+    return this.map.get(k) ?? null
+  }
+  setItem(): never {
+    throw new Error('reading must never write')
+  }
+}
+
+class ThrowingReadStorage {
+  getItem(): never {
+    throw new Error('storage unavailable')
+  }
+  setItem(): void {}
+}
+
+class ThrowingWriteStorage {
+  private map = new Map<string, string>()
+  getItem(k: string): string | null {
+    return this.map.get(k) ?? null
+  }
+  setItem(): never {
+    throw new Error('quota exceeded')
+  }
+}
+
 const ids = () => {
   let n = 0
   return () => `id${++n}`
@@ -45,6 +76,50 @@ describe('CompositionStore', () => {
     expect(new CompositionStore(storage).all()).toEqual([])
     storage.setItem('doinu.compositions', 'not json')
     expect(new CompositionStore(storage).all()).toEqual([])
+  })
+
+  it('loads back a fixture built via the current save path, complete (format guard)', () => {
+    const storage = new FakeStorage()
+    const writer = new CompositionStore(storage, ids())
+    writer.save({ name: 'Twinkle', createdAt: 111, notes })
+    writer.save({
+      name: 'Ode to Joy',
+      createdAt: 222,
+      notes: [{ midi: 64, startMs: 0, durMs: 300 }],
+    })
+
+    const reader = new CompositionStore(storage)
+    expect(reader.all()).toEqual([
+      { id: 'id1', name: 'Twinkle', createdAt: 111, notes },
+      {
+        id: 'id2',
+        name: 'Ode to Joy',
+        createdAt: 222,
+        notes: [{ midi: 64, startMs: 0, durMs: 300 }],
+      },
+    ])
+  })
+
+  it('never writes to storage while reading, whether missing or corrupt', () => {
+    const storage = new NoWriteStorage()
+    expect(() => new CompositionStore(storage).all()).not.toThrow()
+    storage.seed('doinu.compositions', 'not json')
+    expect(() => new CompositionStore(storage).all()).not.toThrow()
+    expect(new CompositionStore(storage).all()).toEqual([])
+  })
+
+  it('treats a throwing storage as empty, without crashing', () => {
+    expect(new CompositionStore(new ThrowingReadStorage()).all()).toEqual([])
+  })
+
+  it('reports a failed save instead of throwing or claiming success', () => {
+    let reported = false
+    const store = new CompositionStore(new ThrowingWriteStorage(), ids(), () => {
+      reported = true
+    })
+    const c = store.save({ name: 'My tune', createdAt: 123, notes })
+    expect(c.id).toBe('id1')
+    expect(reported).toBe(true)
   })
 })
 

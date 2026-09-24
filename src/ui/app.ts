@@ -422,7 +422,9 @@ export function bootstrap(): void {
     noInput = true
     if (menuStatus) menuStatus.textContent = t('st.micTapToEnable')
   } else {
-    void selected.start()
+    void selected.start().catch(() => {
+      if (menuStatus) menuStatus.textContent = t('st.noMidi')
+    })
   }
 
   // Mic enable button (shown only on the microphone path).
@@ -479,7 +481,9 @@ export function bootstrap(): void {
     })
   }
 
-  const store = new MetricsStore(window.localStorage)
+  const store = new MetricsStore(window.localStorage, undefined, () => {
+    if (status) status.textContent = t('st.saveFailed')
+  })
   const deps: ExerciseDeps = { stageCanvas, keysCanvas, status, selected }
 
   // Pick the freezing or the free-falling playback per the wait setting.
@@ -1606,7 +1610,9 @@ export function bootstrap(): void {
   // Compose / My melodies: record what you play (real timing), name and save it,
   // then practise it in wait mode. Goes through the selected InputAdapter, so it
   // will work with the future iPad microphone too (monophonic).
-  const compStore = new CompositionStore(window.localStorage)
+  const compStore = new CompositionStore(window.localStorage, undefined, () => {
+    if (menuStatus) menuStatus.textContent = t('st.saveFailed')
+  })
   const myMelodiesOverlay = document.getElementById('mymelodies')
   const melodyList = document.getElementById('melody-list')
   const composeRecordBtn = document.getElementById('compose-record')
@@ -1951,7 +1957,7 @@ export function bootstrap(): void {
           noInput = false
         })
         .catch(() => {
-          /* mic denied */
+          if (stateEl) stateEl.textContent = t('st.micDenied')
         })
       if (slider) slider.value = String(gateToSlider(mic.sensitivity))
       if (status) status.textContent = ''

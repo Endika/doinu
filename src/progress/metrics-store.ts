@@ -1,5 +1,8 @@
 import { uuidv7 } from 'uuidv7'
 import type { Summary } from '../engine/scoring'
+import { readArray, writeArray, type KeyValueStorage } from './array-storage'
+
+export type { KeyValueStorage }
 
 export interface Session {
   id: string // uuidv7
@@ -11,18 +14,13 @@ export interface Session {
   tempoBpm: number
 }
 
-// Minimal storage seam (matches the Web Storage API subset we use).
-export interface KeyValueStorage {
-  getItem(key: string): string | null
-  setItem(key: string, value: string): void
-}
-
 const STORAGE_KEY = 'doinu.sessions'
 
 export class MetricsStore {
   constructor(
     private readonly storage: KeyValueStorage,
     private readonly makeId: () => string = uuidv7,
+    private readonly onWriteFailed?: () => void,
   ) {}
 
   record(input: { exerciseId: string; timestamp: number; summary: Summary }): Session {
@@ -38,19 +36,12 @@ export class MetricsStore {
     }
     const sessions = this.all()
     sessions.push(session)
-    this.storage.setItem(STORAGE_KEY, JSON.stringify(sessions))
+    if (!writeArray(this.storage, STORAGE_KEY, sessions)) this.onWriteFailed?.()
     return session
   }
 
   all(): Session[] {
-    const raw = this.storage.getItem(STORAGE_KEY)
-    if (raw === null) return []
-    try {
-      const parsed = JSON.parse(raw)
-      return Array.isArray(parsed) ? (parsed as Session[]) : []
-    } catch {
-      return []
-    }
+    return readArray<Session>(this.storage, STORAGE_KEY)
   }
 
   sessionsFor(exerciseId: string): Session[] {
