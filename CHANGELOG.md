@@ -1,5 +1,12 @@
 # Changelog
 
+## [0.16.1](https://github.com/Endika/doinu/compare/v0.16.0...v0.16.1) (2026-09-24)
+
+
+### Bug Fixes
+
+* guard stored formats and report mic and midi failures ([5677208](https://github.com/Endika/doinu/commit/5677208fb12ef1768c19577ae5d6113f16b3a5d5))
+
 ## [0.16.0](https://github.com/Endika/doinu/compare/v0.15.0...v0.16.0) (2026-09-16)
 
 
