@@ -62,13 +62,11 @@ describe('metrics store', () => {
     expect(store.all()).toEqual([])
   })
 
-  it('loads back a fixture built via the current save path, complete (format guard)', () => {
+  it('loads a literal snapshot of the current on-disk format back complete (format guard)', () => {
+    // Pinned to today's on-disk shape: renaming a field in both record and load
+    // without a migration must break this test, not just round-trip clean.
     const storage = new FakeStorage()
-    const writer = new MetricsStore(storage, () => 'id-1')
-    writer.record({ exerciseId: 'twinkle-1', timestamp: 1000, summary })
-
-    const reader = new MetricsStore(storage)
-    expect(reader.all()).toEqual([
+    const snapshot = [
       {
         id: 'id-1',
         exerciseId: 'twinkle-1',
@@ -78,7 +76,10 @@ describe('metrics store', () => {
         meanFindMs: 800,
         tempoBpm: 60,
       },
-    ])
+    ]
+    storage.setItem('doinu.sessions', JSON.stringify(snapshot))
+
+    expect(new MetricsStore(storage).all()).toEqual(snapshot)
   })
 
   it('never writes to storage while reading, whether missing or corrupt', () => {
