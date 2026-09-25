@@ -78,18 +78,11 @@ describe('CompositionStore', () => {
     expect(new CompositionStore(storage).all()).toEqual([])
   })
 
-  it('loads back a fixture built via the current save path, complete (format guard)', () => {
+  it('loads a literal snapshot of the current on-disk format back complete (format guard)', () => {
+    // Pinned to today's on-disk shape: renaming a field in both save and load
+    // without a migration must break this test, not just round-trip clean.
     const storage = new FakeStorage()
-    const writer = new CompositionStore(storage, ids())
-    writer.save({ name: 'Twinkle', createdAt: 111, notes })
-    writer.save({
-      name: 'Ode to Joy',
-      createdAt: 222,
-      notes: [{ midi: 64, startMs: 0, durMs: 300 }],
-    })
-
-    const reader = new CompositionStore(storage)
-    expect(reader.all()).toEqual([
+    const snapshot = [
       { id: 'id1', name: 'Twinkle', createdAt: 111, notes },
       {
         id: 'id2',
@@ -97,7 +90,10 @@ describe('CompositionStore', () => {
         createdAt: 222,
         notes: [{ midi: 64, startMs: 0, durMs: 300 }],
       },
-    ])
+    ]
+    storage.setItem('doinu.compositions', JSON.stringify(snapshot))
+
+    expect(new CompositionStore(storage).all()).toEqual(snapshot)
   })
 
   it('never writes to storage while reading, whether missing or corrupt', () => {
