@@ -211,8 +211,19 @@ function runChart(
 
   const adapter = new SongTimeAdapter(selected, origin)
   const engine = new Engine(chart, adapter, songClock, { windowMs: WINDOW_MS })
-  const renderer = new Renderer(stageCtx, { hitLineY, pxPerMs: PX_PER_MS })
+  const geometry = { hitLineY, pxPerMs: PX_PER_MS }
+  const renderer = new Renderer(stageCtx, geometry)
   const keyboard = new Keyboard(keysCtx)
+
+  // Android WebView can report a stale (too short) CSS box on the first frames.
+  // Re-fit every frame and keep the hit line glued to the real bottom edge, so
+  // the stage is never stretched vertically (which would also stretch the digits).
+  const refitStage = (): void => {
+    if (fitCanvas(stageCanvas)) {
+      geometry.hitLineY = stageCanvas ? stageCanvas.height * 0.99 : 0
+    }
+    fitCanvas(keysCanvas)
+  }
 
   if (status) status.textContent = title
 
@@ -226,6 +237,7 @@ function runChart(
   let rafId = 0
   const loop = (): void => {
     if (!running) return
+    refitStage()
     engine.tick()
     const frame = engine.frameState()
     renderer.draw(frame)
@@ -278,8 +290,17 @@ function runChartWaiting(
 
   const adapter = new ClockStampAdapter(selected, clock)
   const engine = new Engine(chart, adapter, clock, { windowMs: WINDOW_MS })
-  const renderer = new Renderer(stageCtx, { hitLineY, pxPerMs: PX_PER_MS })
+  const geometry = { hitLineY, pxPerMs: PX_PER_MS }
+  const renderer = new Renderer(stageCtx, geometry)
   const keyboard = new Keyboard(keysCtx)
+
+  // See `runChart`: keep the bitmap glued to the CSS box on every frame.
+  const refitStage = (): void => {
+    if (fitCanvas(stageCanvas)) {
+      geometry.hitLineY = stageCanvas ? stageCanvas.height * 0.99 : 0
+    }
+    fitCanvas(keysCanvas)
+  }
 
   if (status) status.textContent = title
   engine.start()
@@ -292,6 +313,7 @@ function runChartWaiting(
   let rafId = 0
   const loop = (): void => {
     if (!running) return
+    refitStage()
     engine.tick()
 
     // The wait: pause at the earliest unplayed note's time until it is played.
@@ -380,7 +402,8 @@ export function bootstrap(): void {
   }
 
   langToggle?.addEventListener('click', () => {
-    const next: Locale = i18n.locale === Locale.En ? Locale.Es : Locale.En
+    const next: Locale =
+      i18n.locale === Locale.En ? Locale.Zh : i18n.locale === Locale.Zh ? Locale.Es : Locale.En
     i18n.set(next)
     window.localStorage.setItem(LANG_STORAGE_KEY, next)
     applyI18n()
@@ -2006,8 +2029,23 @@ function ensureStatusEl(): HTMLElement | null {
   return el
 }
 
+/** Re-fit a canvas bitmap to its CSS box. Returns true when it had to resize. */
+function fitCanvas(canvas: HTMLCanvasElement | null): boolean {
+  if (!canvas) return false
+  // A zero box means the layout has not settled yet (common on the first Android
+  // WebView frame). Skip this frame instead of guessing: falling back to
+  // window.innerHeight makes a canvas taller than the window, and because a flex
+  // item's automatic minimum size follows its content, that locks the whole
+  // layout into the wrong proportions.
+  const width = canvas.clientWidth
+  const height = canvas.clientHeight
+  if (width === 0 || height === 0) return false
+  if (canvas.width === width && canvas.height === height) return false
+  canvas.width = width
+  canvas.height = height
+  return true
+}
+
 function sizeCanvas(canvas: HTMLCanvasElement | null): void {
-  if (!canvas) return
-  canvas.width = canvas.clientWidth || window.innerWidth
-  canvas.height = canvas.clientHeight || window.innerHeight
+  fitCanvas(canvas)
 }
