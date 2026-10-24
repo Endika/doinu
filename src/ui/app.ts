@@ -433,9 +433,16 @@ export function bootstrap(): void {
   // key press sounds. The engine subscribes separately via its own wrapped
   // (song-time) adapter inside runChart — the two listeners coexist.
   const synth = new Synth()
-  selected.onEvent((e) =>
-    e.type === InputEventType.On ? synth.noteOn(e.note) : synth.noteOff(e.note),
-  )
+  // The MIDI build sets this flag: the piano makes every key's sound, so the
+  // tablet must not re-synthesise the input (a note ~20ms late on top of the
+  // real key = an ugly flam). Demo/playback sequences are unaffected.
+  const muteInputSynth =
+    typeof window !== 'undefined' &&
+    (window as unknown as { __DOINU_MUTE_INPUT_SYNTH?: boolean }).__DOINU_MUTE_INPUT_SYNTH === true
+  selected.onEvent((e) => {
+    if (muteInputSynth) return
+    e.type === InputEventType.On ? synth.noteOn(e.note) : synth.noteOff(e.note)
+  })
 
   // MIDI starts immediately so every activity receives events. The microphone
   // needs a user gesture (getUserMedia + a suspended AudioContext), so it stays
