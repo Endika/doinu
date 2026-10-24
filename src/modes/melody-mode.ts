@@ -1,6 +1,7 @@
 import { Hand, type Chart, type Target } from '../engine/chart'
 import type { Summary } from '../engine/scoring'
 import type { Exercise } from '../content/curriculum'
+import { autoFingers } from '../core/fingering'
 import type { Mode, Verdict } from './mode'
 
 // A single-hand melody: the learner plays a sequence of notes as the bars fall.
@@ -9,12 +10,14 @@ export class MelodyMode implements Mode {
 
   buildChart(): Chart {
     const beatMs = 60000 / this.exercise.bpm
+    const fingers = this.exercise.fingers ?? autoFingers(this.exercise.notes)
     const targets: Target[] = this.exercise.notes.map((midi, i) => ({
       id: `n${i}`,
       midi,
       startMs: i * beatMs,
       durMs: beatMs,
       hand: Hand.Right,
+      finger: fingers[i],
     }))
     return { bpm: this.exercise.bpm, targets }
   }

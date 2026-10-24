@@ -5,6 +5,8 @@ export interface Exercise {
   bpm: number
   notes: number[] // sequence of midi numbers, one beat apart, right hand
   passAccuracy: number // mastery threshold for THIS exercise (e.g. 0.9)
+  /** Optional authored fingering, one entry per note; otherwise derived from the shape. */
+  fingers?: number[]
 }
 
 // Built-in beginner curriculum: short, right-hand, around middle C (60).
@@ -15,6 +17,7 @@ export const CURRICULUM: Exercise[] = [
     title: 'First Three Notes',
     bpm: 60,
     notes: [60, 62, 64], // C D E
+    fingers: [1, 2, 3],
     passAccuracy: 0.9,
   },
   {
@@ -22,6 +25,7 @@ export const CURRICULUM: Exercise[] = [
     title: 'Twinkle Twinkle (Opening)',
     bpm: 70,
     notes: [60, 60, 67, 67, 69, 69, 67], // C C G G A A G
+    fingers: [1, 1, 5, 5, 5, 5, 5], // thumb on Do, little finger shifted up for La
     passAccuracy: 0.9,
   },
   {
@@ -29,6 +33,7 @@ export const CURRICULUM: Exercise[] = [
     title: 'Five Finger Scale',
     bpm: 80,
     notes: [60, 62, 64, 65, 67], // C D E F G
+    fingers: [1, 2, 3, 4, 5],
     passAccuracy: 0.9,
   },
 ]

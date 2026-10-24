@@ -43,23 +43,45 @@ function pct(value: number): number {
   return Math.round(value * 100)
 }
 
-function formatRow(r: ExerciseReport): string {
+export type RowText = (key: string) => string
+
+// Row text defaults to the original English tokens, so existing callers and
+// tests keep byte-identical output unless a translator (the app's i18n) is passed.
+const EN_TOKENS: Record<string, string> = {
+  'state.locked': 'locked',
+  'state.inProgress': 'inProgress',
+  'state.passed': 'passed',
+  'state.mastered': 'mastered',
+  'progress.attempts': 'attempts',
+  'progress.best': 'best',
+  'progress.latest': 'latest',
+  'progress.find': 'find',
+  'progress.ms': 'ms',
+  'progress.bpm': 'bpm',
+}
+const defaultText: RowText = (key) => EN_TOKENS[key] ?? key
+
+function formatRow(r: ExerciseReport, t: RowText = defaultText): string {
   return (
-    `${r.title}: ${r.state} · ${r.sessions} attempts · ` +
-    `best ${pct(r.bestAccuracy)}%, latest ${pct(r.latestAccuracy)}% · ` +
-    `find ${Math.round(r.firstFindMs)}→${Math.round(r.latestFindMs)} ms · ` +
-    `${r.bestTempoBpm} bpm`
+    `${r.title}: ${t('state.' + r.state)} · ${r.sessions} ${t('progress.attempts')} · ` +
+    `${t('progress.best')} ${pct(r.bestAccuracy)}%, ${t('progress.latest')} ${pct(r.latestAccuracy)}% · ` +
+    `${t('progress.find')} ${Math.round(r.firstFindMs)}→${Math.round(r.latestFindMs)} ${t('progress.ms')} · ` +
+    `${r.bestTempoBpm} ${t('progress.bpm')}`
   )
 }
 
 // Thin DOM wrapper: render the report rows into a container element as readable text.
 // Guard against a null element. (Not unit-tested; keep it minimal & dependency-free.)
-export function renderProgressReport(el: HTMLElement | null, report: ExerciseReport[]): void {
+export function renderProgressReport(
+  el: HTMLElement | null,
+  report: ExerciseReport[],
+  t: RowText = defaultText,
+): void {
   if (el === null) return
   el.textContent = ''
   for (const row of report) {
     const line = el.ownerDocument.createElement('div')
-    line.textContent = formatRow(row)
+    line.textContent = formatRow(row, t)
     el.appendChild(line)
   }
 }

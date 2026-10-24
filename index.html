@@ -46,6 +46,7 @@
       #keys {
         display: block;
         flex: 0 0 26vh;
+        min-height: 0; /* never let the canvas bitmap's intrinsic height set the layout */
         width: 100%;
         background: linear-gradient(180deg, #ffd86b 0%, #ffc24d 100%);
         box-shadow: inset 0 4px 0 rgba(255, 255, 255, 0.5);
@@ -217,6 +218,16 @@
         font-size: 1.1rem;
         font-weight: 600;
         color: #8a5be0;
+      }
+      /* Reminder of what the little digits on the falling notes mean. */
+      #menu .finger-legend {
+        margin: -0.35rem 0 0;
+        max-width: 21rem;
+        text-align: center;
+        font-size: 0.82rem;
+        font-weight: 600;
+        line-height: 1.35;
+        color: #6b5bb8;
       }
       #menu .menu-list {
         display: flex;
@@ -754,15 +765,12 @@
         text-shadow: 0 2px 6px rgba(40, 20, 90, 0.45);
       }
       #menu .menu-version {
-        position: fixed;
-        bottom: 0.9rem;
-        left: 0;
-        right: 0;
-        margin: 0;
+        position: static;
+        margin: 0.35rem 0 0;
         text-align: center;
         font-size: 0.85rem;
         font-weight: 600;
-        color: rgba(255, 255, 255, 0.85);
+        color: rgba(255, 255, 255, 0.9);
         text-shadow: 0 1px 4px rgba(40, 20, 90, 0.4);
       }
       @keyframes bob {
@@ -804,6 +812,9 @@
       <div class="menu-card">
         <h1 class="menu-title">🎹 Doinu</h1>
         <p class="menu-sub" data-i18n="menu.sub">¡A jugar! 🎶</p>
+        <p class="finger-legend" data-i18n="finger.legend">
+          Finger numbers: 1 thumb · 2 index · 3 middle · 4 ring · 5 pinky
+        </p>
         <div class="menu-list">
           <button class="menu-btn" type="button" data-activity="path" data-i18n="act.path">
             🗺️ Path

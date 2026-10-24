@@ -2,6 +2,7 @@ import { InputSource, type InputAdapter, type Capabilities } from '../core/input
 import { InputEventType, type InputEvent } from '../core/events'
 import { MidiInputAdapter } from '../core/midi-adapter'
 import { MicInputAdapter } from '../core/mic-adapter'
+import { VirtualInputAdapter } from '../core/virtual-adapter'
 import { perfClock, offsetClock, PausableClock, type Clock } from '../core/clock'
 import { Engine } from '../engine/engine'
 import type { Summary } from '../engine/scoring'
@@ -36,10 +37,30 @@ import { MetricsStore } from '../progress/metrics-store'
 import { buildMasteryMap, MasteryState, type MasteryEntry } from '../progress/mastery'
 import { buildProgressReport, renderProgressReport } from '../progress/progress-view'
 import { PATH, PATH_LESSONS, LessonKind, type PathLesson } from '../content/path'
+import {
+  lookupZhTitle,
+  lookupZhConcept,
+  localizeStudyTitle,
+} from '../content/zh'
 import { buildPathProgress, lessonNeedsPolyphony, PathLessonState } from '../progress/path-progress'
 import { CompositionRecorder, type RecordedNote } from '../modes/composition-recorder'
 import { CompositionStore, compositionChart, type Composition } from '../progress/composition-store'
 import { resolveLocale, createI18n, Locale, type MessageKey } from '../i18n'
+
+// The Android MIDI shell injects a Web MIDI shim whose turn side effect is
+// `window.__doinuMidiBatch` (one or more {status,note,velocity} events). The
+// autoplay flag below is a test rig used by the Android demo mode only.
+declare global {
+  interface Window {
+    __doinuMidiBatch?: (events: { status: number; note: number; velocity: number }[]) => void
+    __DOINU_AUTOPLAY?: boolean
+  }
+}
+
+/** True when the Android demo rig asked the app to play pending notes itself. */
+function autoplayRequested(): boolean {
+  return typeof window !== 'undefined' && window.__DOINU_AUTOPLAY === true
+}
 
 /**
  * Module-level translator. Defaults to an English-only lookup so node tests
@@ -121,7 +142,7 @@ export interface Env {
 // the call sites that select and thread the active adapter around.)
 export type SelectedAdapter = InputAdapter
 
-export type InputPref = 'midi' | 'mic'
+export type InputPref = 'midi' | 'mic' | 'virtual'
 
 /**
  * Pure adapter selection. A stored preference wins; otherwise auto: a MIDI
@@ -130,6 +151,7 @@ export type InputPref = 'midi' | 'mic'
  * touches no DOM; only its start() does.
  */
 export function selectAdapter(env: Env, pref?: InputPref | null): SelectedAdapter {
+  if (pref === 'virtual') return new VirtualInputAdapter()
   if (pref === 'mic') return new MicInputAdapter()
   if (pref === 'midi') return env.hasWebMidi ? new MidiInputAdapter() : new MicInputAdapter()
   return env.hasWebMidi ? new MidiInputAdapter() : new MicInputAdapter()
@@ -211,8 +233,19 @@ function runChart(
 
   const adapter = new SongTimeAdapter(selected, origin)
   const engine = new Engine(chart, adapter, songClock, { windowMs: WINDOW_MS })
-  const renderer = new Renderer(stageCtx, { hitLineY, pxPerMs: PX_PER_MS })
+  const geometry = { hitLineY, pxPerMs: PX_PER_MS }
+  const renderer = new Renderer(stageCtx, geometry)
   const keyboard = new Keyboard(keysCtx)
+
+  // Android WebView can report a stale (too short) CSS box on the first frames.
+  // Re-fit every frame and keep the hit line glued to the real bottom edge, so
+  // the stage is never stretched vertically (which would also stretch the digits).
+  const refitStage = (): void => {
+    if (fitCanvas(stageCanvas)) {
+      geometry.hitLineY = stageCanvas ? stageCanvas.height * 0.99 : 0
+    }
+    fitCanvas(keysCanvas)
+  }
 
   if (status) status.textContent = title
 
@@ -226,6 +259,7 @@ function runChart(
   let rafId = 0
   const loop = (): void => {
     if (!running) return
+    refitStage()
     engine.tick()
     const frame = engine.frameState()
     renderer.draw(frame)
@@ -278,8 +312,17 @@ function runChartWaiting(
 
   const adapter = new ClockStampAdapter(selected, clock)
   const engine = new Engine(chart, adapter, clock, { windowMs: WINDOW_MS })
-  const renderer = new Renderer(stageCtx, { hitLineY, pxPerMs: PX_PER_MS })
+  const geometry = { hitLineY, pxPerMs: PX_PER_MS }
+  const renderer = new Renderer(stageCtx, geometry)
   const keyboard = new Keyboard(keysCtx)
+
+  // See `runChart`: keep the bitmap glued to the CSS box on every frame.
+  const refitStage = (): void => {
+    if (fitCanvas(stageCanvas)) {
+      geometry.hitLineY = stageCanvas ? stageCanvas.height * 0.99 : 0
+    }
+    fitCanvas(keysCanvas)
+  }
 
   if (status) status.textContent = title
   engine.start()
@@ -290,8 +333,18 @@ function runChartWaiting(
 
   let running = true
   let rafId = 0
+  // Test-only autoplay rig (Android demo mode): when the clock is paused on an
+  // expected note and the flag is on, feed that exact note through the Web MIDI
+  // shim — the same path a real key press takes — after a short human-like delay.
+  // Feeds neither the matcher nor the scorer any fake answer the engine could
+  // not have received from a real keyboard: it only plays the pending note.
+  const autoplay = autoplayRequested()
+  let autoLast = ''
+  let autoTimer = 0
+
   const loop = (): void => {
     if (!running) return
+    refitStage()
     engine.tick()
 
     // The wait: pause at the earliest unplayed note's time until it is played.
@@ -301,11 +354,36 @@ function runChartWaiting(
       if (clock.now() >= nextStart) {
         clock.setTo(nextStart) // clamp the score exactly at the hit line
         clock.pause()
+        if (autoplay) {
+          const key = pending
+            .map((t) => t.midi)
+            .sort((a, b) => a - b)
+            .join(',')
+          if (key !== autoLast) {
+            autoLast = key
+            const midis = pending.map((t) => t.midi)
+            window.clearTimeout(autoTimer)
+            autoTimer = window.setTimeout(() => {
+              if (!running) return
+              window.__doinuMidiBatch?.(
+                midis.map((note) => ({ status: 0x90, note, velocity: 90 })),
+              )
+              autoTimer = window.setTimeout(() => {
+                if (!running) return
+                window.__doinuMidiBatch?.(
+                  midis.map((note) => ({ status: 0x80, note, velocity: 0 })),
+                )
+              }, 280)
+            }, 420)
+          }
+        }
       } else {
         clock.resume()
+        autoLast = ''
       }
     } else {
       clock.resume()
+      autoLast = ''
     }
 
     const frame = engine.frameState()
@@ -316,6 +394,7 @@ function runChartWaiting(
     if (clock.now() >= lastEndMs + 800) {
       running = false
       engine.stop()
+      window.clearTimeout(autoTimer)
       onComplete(engine)
       return
     }
@@ -325,6 +404,7 @@ function runChartWaiting(
 
   return (): void => {
     running = false
+    window.clearTimeout(autoTimer)
     cancelAnimationFrame(rafId)
     engine.stop()
   }
@@ -361,6 +441,15 @@ export function bootstrap(): void {
     resolveLocale(navigator.language, window.localStorage.getItem(LANG_STORAGE_KEY)),
   )
   t = i18n.t
+
+  // Chinese content overrides: everything else is translated through `t`; these
+  // cover authored titles (lessons / songs / exercises), which are data.
+  const zhContent = (): boolean => i18n.locale === Locale.Zh
+  const lzTitle = (id: string, fallback: string): string =>
+    zhContent() ? lookupZhTitle(id, fallback) : fallback
+  const lzConcept = (id: string, fallback: string): string =>
+    zhContent() ? lookupZhConcept(id, fallback) : fallback
+  const lzStudy = (title: string): string => (zhContent() ? localizeStudyTitle(title) : title)
   const langToggle = document.getElementById('lang-toggle')
   const progressContent = document.getElementById('progress-content')
 
@@ -380,7 +469,8 @@ export function bootstrap(): void {
   }
 
   langToggle?.addEventListener('click', () => {
-    const next: Locale = i18n.locale === Locale.En ? Locale.Es : Locale.En
+    const next: Locale =
+      i18n.locale === Locale.En ? Locale.Zh : i18n.locale === Locale.Zh ? Locale.Es : Locale.En
     i18n.set(next)
     window.localStorage.setItem(LANG_STORAGE_KEY, next)
     applyI18n()
@@ -410,9 +500,23 @@ export function bootstrap(): void {
   // key press sounds. The engine subscribes separately via its own wrapped
   // (song-time) adapter inside runChart — the two listeners coexist.
   const synth = new Synth()
-  selected.onEvent((e) =>
-    e.type === InputEventType.On ? synth.noteOn(e.note) : synth.noteOff(e.note),
-  )
+  // Decode the piano samples immediately: decoding needs no audio context nor a
+  // user gesture, so the grand piano is ready by the first tap.
+  synth.warmup()
+  // The MIDI build sets a mute flag: when a real piano is attached it makes every
+  // key's sound, so the tablet must not re-synthesise the input (a note ~20ms
+  // late on top of the real key = an ugly flam). Applies to the MIDI input only:
+  // the on-screen keyboard and the mic still get the tablet's feedback sound.
+  const usingMidi = selected.capabilities.source === InputSource.Midi
+  const muteInputSynth =
+    typeof window !== 'undefined' &&
+    (window as unknown as { __DOINU_MUTE_INPUT_SYNTH?: boolean }).__DOINU_MUTE_INPUT_SYNTH ===
+      true &&
+    usingMidi
+  selected.onEvent((e) => {
+    if (muteInputSynth) return
+    e.type === InputEventType.On ? synth.noteOn(e.note) : synth.noteOff(e.note)
+  })
 
   // MIDI starts immediately so every activity receives events. The microphone
   // needs a user gesture (getUserMedia + a suspended AudioContext), so it stays
@@ -446,21 +550,29 @@ export function bootstrap(): void {
     })
   }
 
-  // Manual MIDI <-> microphone toggle, shown only when Web MIDI exists (a real
-  // choice). Switching is a rare, deliberate action → persist + reload, which
-  // avoids re-wiring the live listeners.
+  // Input source toggle: MIDI keyboard ⇄ microphone ⇄ on-screen keyboard.
+  // Shown whenever there is more than one honest choice; switching persists and
+  // reloads, which avoids re-wiring the live listeners.
   const inputToggle = document.getElementById('input-toggle')
   if (inputToggle) {
-    if (env.hasWebMidi) {
-      inputToggle.textContent = usingMic ? t('input.useMidi') : t('input.useMic')
-      inputToggle.classList.remove('hidden')
-      inputToggle.addEventListener('click', () => {
-        window.localStorage.setItem(INPUT_PREF_KEY, usingMic ? 'midi' : 'mic')
-        window.location.reload()
-      })
-    } else {
-      inputToggle.classList.add('hidden')
+    const labelFor = (next: InputPref): string =>
+      next === 'midi' ? t('input.useMidi') : next === 'mic' ? t('input.useMic') : t('input.useVirtual')
+    const nextPref = (current: InputPref): InputPref => {
+      if (current === 'virtual') return env.hasWebMidi ? 'midi' : 'mic'
+      if (current === 'mic') return env.hasWebMidi ? 'midi' : 'virtual'
+      return 'virtual' // midi → on-screen keys
     }
+    const current: InputPref = selected.capabilities.source === InputSource.Mic
+      ? 'mic'
+      : selected.capabilities.source === InputSource.Midi
+        ? 'midi'
+        : 'virtual'
+    inputToggle.textContent = labelFor(nextPref(current))
+    inputToggle.classList.remove('hidden')
+    inputToggle.addEventListener('click', () => {
+      window.localStorage.setItem(INPUT_PREF_KEY, nextPref(current))
+      window.location.reload()
+    })
   }
 
   // "Wait for the right note" setting: when off, scores keep falling instead of
@@ -498,8 +610,16 @@ export function bootstrap(): void {
     const map = buildMasteryMap(CURRICULUM, (id) => store.sessionsFor(id))
     const stateFor = (id: string): MasteryState =>
       map.find((e) => e.exerciseId === id)?.state ?? MasteryState.Locked
-    const report = buildProgressReport(CURRICULUM, (id) => store.sessionsFor(id), stateFor)
-    renderProgressReport(reportEl, report)
+    const zhExercise = (e: Exercise): Exercise =>
+      i18n.locale === Locale.Zh ? { ...e, title: lookupZhTitle(e.id, e.title) } : e
+    const report = buildProgressReport(
+      CURRICULUM.map(zhExercise),
+      (id) => store.sessionsFor(id),
+      stateFor,
+    )
+    renderProgressReport(reportEl, report, (key: string) =>
+      i18n.t(key as MessageKey),
+    )
   }
 
   refreshReport()
@@ -537,7 +657,7 @@ export function bootstrap(): void {
     const playOne = (id: string): void => {
       if (!alive) return
       const exercise = findExercise(id)
-      stopChart = runChart(new MelodyMode(exercise), exercise.title, deps, (engine) => {
+      stopChart = runChart(new MelodyMode(exercise), lzTitle(exercise.id, exercise.title), deps, (engine) => {
         if (!alive) return
         store.record({ exerciseId: exercise.id, timestamp: Date.now(), summary: engine.summary() })
         refreshReport()
@@ -1216,7 +1336,7 @@ export function bootstrap(): void {
     backBtn?.classList.remove('hidden')
 
     const spec = SCALES.find((s) => s.id === scaleId) ?? SCALES[0]
-    stopChart = runChart(new ScaleMode(spec), spec.title, deps, (engine) => {
+    stopChart = runChart(new ScaleMode(spec), lzTitle(spec.id, spec.title), deps, (engine) => {
       if (!alive) return
       store.record({ exerciseId: spec.id, timestamp: Date.now(), summary: engine.summary() })
       refreshReport()
@@ -1250,7 +1370,7 @@ export function bootstrap(): void {
     const playOne = (id: string): void => {
       if (!alive) return
       const exercise = findExercise(id)
-      stopRun = runPlayback(new MelodyMode(exercise), `${exercise.title} 🐢`, deps, (engine) => {
+      stopRun = runPlayback(new MelodyMode(exercise), `${lzTitle(exercise.id, exercise.title)} 🐢`, deps, (engine) => {
         if (!alive) return
         store.record({
           exerciseId: `practice:${exercise.id}`,
@@ -1307,7 +1427,7 @@ export function bootstrap(): void {
     backBtn?.addEventListener('click', exit)
     backBtn?.classList.remove('hidden')
 
-    stopRun = runPlayback(new SongMode(song, sel), song.title, deps, (engine) => {
+    stopRun = runPlayback(new SongMode(song, sel), song.id.startsWith('study-') ? lzStudy(song.title) : lzTitle(song.id, song.title), deps, (engine) => {
       if (!alive) return
       store.record({
         exerciseId: `song:${song.id}:${sel}`,
@@ -1332,7 +1452,9 @@ export function bootstrap(): void {
 
       const title = document.createElement('div')
       title.className = 'song-title'
-      title.textContent = song.title
+      title.textContent = song.id.startsWith('study-')
+        ? lzStudy(song.title)
+        : lzTitle(song.id, song.title)
       card.appendChild(title)
 
       const handsRow = document.createElement('div')
@@ -1531,7 +1653,7 @@ export function bootstrap(): void {
     backBtn?.addEventListener('click', exit)
     backBtn?.classList.remove('hidden')
 
-    stopRun = runPlayback(lessonMode(lesson), lesson.title, deps, (engine) => {
+    stopRun = runPlayback(lessonMode(lesson), lzTitle(lesson.id, lesson.title), deps, (engine) => {
       if (!alive) return
       store.record({
         exerciseId: `path:${lesson.id}`,
@@ -1556,7 +1678,7 @@ export function bootstrap(): void {
       block.className = 'path-unit'
       const heading = document.createElement('div')
       heading.className = 'path-unit-title'
-      heading.textContent = unit.title
+      heading.textContent = lzTitle(unit.id, unit.title)
       block.appendChild(heading)
 
       for (const lesson of unit.lessons) {
@@ -1583,14 +1705,14 @@ export function bootstrap(): void {
         text.className = 'path-node-text'
         const title = document.createElement('span')
         title.className = 'path-node-title'
-        title.textContent = lesson.title
+        title.textContent = lzTitle(lesson.id, lesson.title)
         const concept = document.createElement('span')
         concept.className = 'path-node-concept'
         concept.textContent = midiOnly
           ? t('path.midiOnly')
           : st === PathLessonState.Soon
             ? t('path.soon')
-            : lesson.concept
+            : lzConcept(lesson.id, lesson.concept)
         text.appendChild(title)
         text.appendChild(concept)
         node.appendChild(text)
@@ -2006,8 +2128,23 @@ function ensureStatusEl(): HTMLElement | null {
   return el
 }
 
+/** Re-fit a canvas bitmap to its CSS box. Returns true when it had to resize. */
+function fitCanvas(canvas: HTMLCanvasElement | null): boolean {
+  if (!canvas) return false
+  // A zero box means the layout has not settled yet (common on the first Android
+  // WebView frame). Skip this frame instead of guessing: falling back to
+  // window.innerHeight makes a canvas taller than the window, and because a flex
+  // item's automatic minimum size follows its content, that locks the whole
+  // layout into the wrong proportions.
+  const width = canvas.clientWidth
+  const height = canvas.clientHeight
+  if (width === 0 || height === 0) return false
+  if (canvas.width === width && canvas.height === height) return false
+  canvas.width = width
+  canvas.height = height
+  return true
+}
+
 function sizeCanvas(canvas: HTMLCanvasElement | null): void {
-  if (!canvas) return
-  canvas.width = canvas.clientWidth || window.innerWidth
-  canvas.height = canvas.clientHeight || window.innerHeight
+  fitCanvas(canvas)
 }

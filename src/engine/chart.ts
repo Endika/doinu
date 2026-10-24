@@ -8,6 +8,8 @@ export interface Target {
   startMs: number
   durMs: number
   hand: Hand
+  /** Suggested finger for this note (1 = thumb … 5 = little finger). */
+  finger?: number
 }
 export interface Chart {
   bpm: number
