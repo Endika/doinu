@@ -37,6 +37,11 @@ import { MetricsStore } from '../progress/metrics-store'
 import { buildMasteryMap, MasteryState, type MasteryEntry } from '../progress/mastery'
 import { buildProgressReport, renderProgressReport } from '../progress/progress-view'
 import { PATH, PATH_LESSONS, LessonKind, type PathLesson } from '../content/path'
+import {
+  lookupZhTitle,
+  lookupZhConcept,
+  localizeStudyTitle,
+} from '../content/zh'
 import { buildPathProgress, lessonNeedsPolyphony, PathLessonState } from '../progress/path-progress'
 import { CompositionRecorder, type RecordedNote } from '../modes/composition-recorder'
 import { CompositionStore, compositionChart, type Composition } from '../progress/composition-store'
@@ -436,6 +441,15 @@ export function bootstrap(): void {
     resolveLocale(navigator.language, window.localStorage.getItem(LANG_STORAGE_KEY)),
   )
   t = i18n.t
+
+  // Chinese content overrides: everything else is translated through `t`; these
+  // cover authored titles (lessons / songs / exercises), which are data.
+  const zhContent = (): boolean => i18n.locale === Locale.Zh
+  const lzTitle = (id: string, fallback: string): string =>
+    zhContent() ? lookupZhTitle(id, fallback) : fallback
+  const lzConcept = (id: string, fallback: string): string =>
+    zhContent() ? lookupZhConcept(id, fallback) : fallback
+  const lzStudy = (title: string): string => (zhContent() ? localizeStudyTitle(title) : title)
   const langToggle = document.getElementById('lang-toggle')
   const progressContent = document.getElementById('progress-content')
 
@@ -596,8 +610,16 @@ export function bootstrap(): void {
     const map = buildMasteryMap(CURRICULUM, (id) => store.sessionsFor(id))
     const stateFor = (id: string): MasteryState =>
       map.find((e) => e.exerciseId === id)?.state ?? MasteryState.Locked
-    const report = buildProgressReport(CURRICULUM, (id) => store.sessionsFor(id), stateFor)
-    renderProgressReport(reportEl, report)
+    const zhExercise = (e: Exercise): Exercise =>
+      i18n.locale === Locale.Zh ? { ...e, title: lookupZhTitle(e.id, e.title) } : e
+    const report = buildProgressReport(
+      CURRICULUM.map(zhExercise),
+      (id) => store.sessionsFor(id),
+      stateFor,
+    )
+    renderProgressReport(reportEl, report, (key: string) =>
+      i18n.t(key as MessageKey),
+    )
   }
 
   refreshReport()
@@ -635,7 +657,7 @@ export function bootstrap(): void {
     const playOne = (id: string): void => {
       if (!alive) return
       const exercise = findExercise(id)
-      stopChart = runChart(new MelodyMode(exercise), exercise.title, deps, (engine) => {
+      stopChart = runChart(new MelodyMode(exercise), lzTitle(exercise.id, exercise.title), deps, (engine) => {
         if (!alive) return
         store.record({ exerciseId: exercise.id, timestamp: Date.now(), summary: engine.summary() })
         refreshReport()
@@ -1314,7 +1336,7 @@ export function bootstrap(): void {
     backBtn?.classList.remove('hidden')
 
     const spec = SCALES.find((s) => s.id === scaleId) ?? SCALES[0]
-    stopChart = runChart(new ScaleMode(spec), spec.title, deps, (engine) => {
+    stopChart = runChart(new ScaleMode(spec), lzTitle(spec.id, spec.title), deps, (engine) => {
       if (!alive) return
       store.record({ exerciseId: spec.id, timestamp: Date.now(), summary: engine.summary() })
       refreshReport()
@@ -1348,7 +1370,7 @@ export function bootstrap(): void {
     const playOne = (id: string): void => {
       if (!alive) return
       const exercise = findExercise(id)
-      stopRun = runPlayback(new MelodyMode(exercise), `${exercise.title} 🐢`, deps, (engine) => {
+      stopRun = runPlayback(new MelodyMode(exercise), `${lzTitle(exercise.id, exercise.title)} 🐢`, deps, (engine) => {
         if (!alive) return
         store.record({
           exerciseId: `practice:${exercise.id}`,
@@ -1405,7 +1427,7 @@ export function bootstrap(): void {
     backBtn?.addEventListener('click', exit)
     backBtn?.classList.remove('hidden')
 
-    stopRun = runPlayback(new SongMode(song, sel), song.title, deps, (engine) => {
+    stopRun = runPlayback(new SongMode(song, sel), song.id.startsWith('study-') ? lzStudy(song.title) : lzTitle(song.id, song.title), deps, (engine) => {
       if (!alive) return
       store.record({
         exerciseId: `song:${song.id}:${sel}`,
@@ -1430,7 +1452,9 @@ export function bootstrap(): void {
 
       const title = document.createElement('div')
       title.className = 'song-title'
-      title.textContent = song.title
+      title.textContent = song.id.startsWith('study-')
+        ? lzStudy(song.title)
+        : lzTitle(song.id, song.title)
       card.appendChild(title)
 
       const handsRow = document.createElement('div')
@@ -1629,7 +1653,7 @@ export function bootstrap(): void {
     backBtn?.addEventListener('click', exit)
     backBtn?.classList.remove('hidden')
 
-    stopRun = runPlayback(lessonMode(lesson), lesson.title, deps, (engine) => {
+    stopRun = runPlayback(lessonMode(lesson), lzTitle(lesson.id, lesson.title), deps, (engine) => {
       if (!alive) return
       store.record({
         exerciseId: `path:${lesson.id}`,
@@ -1654,7 +1678,7 @@ export function bootstrap(): void {
       block.className = 'path-unit'
       const heading = document.createElement('div')
       heading.className = 'path-unit-title'
-      heading.textContent = unit.title
+      heading.textContent = lzTitle(unit.id, unit.title)
       block.appendChild(heading)
 
       for (const lesson of unit.lessons) {
@@ -1681,14 +1705,14 @@ export function bootstrap(): void {
         text.className = 'path-node-text'
         const title = document.createElement('span')
         title.className = 'path-node-title'
-        title.textContent = lesson.title
+        title.textContent = lzTitle(lesson.id, lesson.title)
         const concept = document.createElement('span')
         concept.className = 'path-node-concept'
         concept.textContent = midiOnly
           ? t('path.midiOnly')
           : st === PathLessonState.Soon
             ? t('path.soon')
-            : lesson.concept
+            : lzConcept(lesson.id, lesson.concept)
         text.appendChild(title)
         text.appendChild(concept)
         node.appendChild(text)
