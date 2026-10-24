@@ -1,7 +1,0 @@
-.gradle/
-build/
-app/build/
-local.properties
-app/src/main/assets/www/
-*.apk
-*.aab
