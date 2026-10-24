@@ -486,7 +486,10 @@ export function bootstrap(): void {
   // key press sounds. The engine subscribes separately via its own wrapped
   // (song-time) adapter inside runChart — the two listeners coexist.
   const synth = new Synth()
-  // The MIDI build sets this flag: when a real piano is attached it makes every
+  // Decode the piano samples immediately: decoding needs no audio context nor a
+  // user gesture, so the grand piano is ready by the first tap.
+  synth.warmup()
+  // The MIDI build sets a mute flag: when a real piano is attached it makes every
   // key's sound, so the tablet must not re-synthesise the input (a note ~20ms
   // late on top of the real key = an ugly flam). Applies to the MIDI input only:
   // the on-screen keyboard and the mic still get the tablet's feedback sound.
