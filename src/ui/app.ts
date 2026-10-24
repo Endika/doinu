@@ -2,6 +2,7 @@ import { InputSource, type InputAdapter, type Capabilities } from '../core/input
 import { InputEventType, type InputEvent } from '../core/events'
 import { MidiInputAdapter } from '../core/midi-adapter'
 import { MicInputAdapter } from '../core/mic-adapter'
+import { VirtualInputAdapter } from '../core/virtual-adapter'
 import { perfClock, offsetClock, PausableClock, type Clock } from '../core/clock'
 import { Engine } from '../engine/engine'
 import type { Summary } from '../engine/scoring'
@@ -40,6 +41,21 @@ import { buildPathProgress, lessonNeedsPolyphony, PathLessonState } from '../pro
 import { CompositionRecorder, type RecordedNote } from '../modes/composition-recorder'
 import { CompositionStore, compositionChart, type Composition } from '../progress/composition-store'
 import { resolveLocale, createI18n, Locale, type MessageKey } from '../i18n'
+
+// The Android MIDI shell injects a Web MIDI shim whose turn side effect is
+// `window.__doinuMidiBatch` (one or more {status,note,velocity} events). The
+// autoplay flag below is a test rig used by the Android demo mode only.
+declare global {
+  interface Window {
+    __doinuMidiBatch?: (events: { status: number; note: number; velocity: number }[]) => void
+    __DOINU_AUTOPLAY?: boolean
+  }
+}
+
+/** True when the Android demo rig asked the app to play pending notes itself. */
+function autoplayRequested(): boolean {
+  return typeof window !== 'undefined' && window.__DOINU_AUTOPLAY === true
+}
 
 /**
  * Module-level translator. Defaults to an English-only lookup so node tests
@@ -121,7 +137,7 @@ export interface Env {
 // the call sites that select and thread the active adapter around.)
 export type SelectedAdapter = InputAdapter
 
-export type InputPref = 'midi' | 'mic'
+export type InputPref = 'midi' | 'mic' | 'virtual'
 
 /**
  * Pure adapter selection. A stored preference wins; otherwise auto: a MIDI
@@ -130,6 +146,7 @@ export type InputPref = 'midi' | 'mic'
  * touches no DOM; only its start() does.
  */
 export function selectAdapter(env: Env, pref?: InputPref | null): SelectedAdapter {
+  if (pref === 'virtual') return new VirtualInputAdapter()
   if (pref === 'mic') return new MicInputAdapter()
   if (pref === 'midi') return env.hasWebMidi ? new MidiInputAdapter() : new MicInputAdapter()
   return env.hasWebMidi ? new MidiInputAdapter() : new MicInputAdapter()
@@ -311,6 +328,15 @@ function runChartWaiting(
 
   let running = true
   let rafId = 0
+  // Test-only autoplay rig (Android demo mode): when the clock is paused on an
+  // expected note and the flag is on, feed that exact note through the Web MIDI
+  // shim — the same path a real key press takes — after a short human-like delay.
+  // Feeds neither the matcher nor the scorer any fake answer the engine could
+  // not have received from a real keyboard: it only plays the pending note.
+  const autoplay = autoplayRequested()
+  let autoLast = ''
+  let autoTimer = 0
+
   const loop = (): void => {
     if (!running) return
     refitStage()
@@ -323,11 +349,36 @@ function runChartWaiting(
       if (clock.now() >= nextStart) {
         clock.setTo(nextStart) // clamp the score exactly at the hit line
         clock.pause()
+        if (autoplay) {
+          const key = pending
+            .map((t) => t.midi)
+            .sort((a, b) => a - b)
+            .join(',')
+          if (key !== autoLast) {
+            autoLast = key
+            const midis = pending.map((t) => t.midi)
+            window.clearTimeout(autoTimer)
+            autoTimer = window.setTimeout(() => {
+              if (!running) return
+              window.__doinuMidiBatch?.(
+                midis.map((note) => ({ status: 0x90, note, velocity: 90 })),
+              )
+              autoTimer = window.setTimeout(() => {
+                if (!running) return
+                window.__doinuMidiBatch?.(
+                  midis.map((note) => ({ status: 0x80, note, velocity: 0 })),
+                )
+              }, 280)
+            }, 420)
+          }
+        }
       } else {
         clock.resume()
+        autoLast = ''
       }
     } else {
       clock.resume()
+      autoLast = ''
     }
 
     const frame = engine.frameState()
@@ -338,6 +389,7 @@ function runChartWaiting(
     if (clock.now() >= lastEndMs + 800) {
       running = false
       engine.stop()
+      window.clearTimeout(autoTimer)
       onComplete(engine)
       return
     }
@@ -347,6 +399,7 @@ function runChartWaiting(
 
   return (): void => {
     running = false
+    window.clearTimeout(autoTimer)
     cancelAnimationFrame(rafId)
     engine.stop()
   }
@@ -433,12 +486,16 @@ export function bootstrap(): void {
   // key press sounds. The engine subscribes separately via its own wrapped
   // (song-time) adapter inside runChart — the two listeners coexist.
   const synth = new Synth()
-  // The MIDI build sets this flag: the piano makes every key's sound, so the
-  // tablet must not re-synthesise the input (a note ~20ms late on top of the
-  // real key = an ugly flam). Demo/playback sequences are unaffected.
+  // The MIDI build sets this flag: when a real piano is attached it makes every
+  // key's sound, so the tablet must not re-synthesise the input (a note ~20ms
+  // late on top of the real key = an ugly flam). Applies to the MIDI input only:
+  // the on-screen keyboard and the mic still get the tablet's feedback sound.
+  const usingMidi = selected.capabilities.source === InputSource.Midi
   const muteInputSynth =
     typeof window !== 'undefined' &&
-    (window as unknown as { __DOINU_MUTE_INPUT_SYNTH?: boolean }).__DOINU_MUTE_INPUT_SYNTH === true
+    (window as unknown as { __DOINU_MUTE_INPUT_SYNTH?: boolean }).__DOINU_MUTE_INPUT_SYNTH ===
+      true &&
+    usingMidi
   selected.onEvent((e) => {
     if (muteInputSynth) return
     e.type === InputEventType.On ? synth.noteOn(e.note) : synth.noteOff(e.note)
@@ -476,21 +533,29 @@ export function bootstrap(): void {
     })
   }
 
-  // Manual MIDI <-> microphone toggle, shown only when Web MIDI exists (a real
-  // choice). Switching is a rare, deliberate action → persist + reload, which
-  // avoids re-wiring the live listeners.
+  // Input source toggle: MIDI keyboard ⇄ microphone ⇄ on-screen keyboard.
+  // Shown whenever there is more than one honest choice; switching persists and
+  // reloads, which avoids re-wiring the live listeners.
   const inputToggle = document.getElementById('input-toggle')
   if (inputToggle) {
-    if (env.hasWebMidi) {
-      inputToggle.textContent = usingMic ? t('input.useMidi') : t('input.useMic')
-      inputToggle.classList.remove('hidden')
-      inputToggle.addEventListener('click', () => {
-        window.localStorage.setItem(INPUT_PREF_KEY, usingMic ? 'midi' : 'mic')
-        window.location.reload()
-      })
-    } else {
-      inputToggle.classList.add('hidden')
+    const labelFor = (next: InputPref): string =>
+      next === 'midi' ? t('input.useMidi') : next === 'mic' ? t('input.useMic') : t('input.useVirtual')
+    const nextPref = (current: InputPref): InputPref => {
+      if (current === 'virtual') return env.hasWebMidi ? 'midi' : 'mic'
+      if (current === 'mic') return env.hasWebMidi ? 'midi' : 'virtual'
+      return 'virtual' // midi → on-screen keys
     }
+    const current: InputPref = selected.capabilities.source === InputSource.Mic
+      ? 'mic'
+      : selected.capabilities.source === InputSource.Midi
+        ? 'midi'
+        : 'virtual'
+    inputToggle.textContent = labelFor(nextPref(current))
+    inputToggle.classList.remove('hidden')
+    inputToggle.addEventListener('click', () => {
+      window.localStorage.setItem(INPUT_PREF_KEY, nextPref(current))
+      window.location.reload()
+    })
   }
 
   // "Wait for the right note" setting: when off, scores keep falling instead of

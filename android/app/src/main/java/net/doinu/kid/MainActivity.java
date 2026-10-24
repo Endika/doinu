@@ -70,6 +70,9 @@ public class MainActivity extends Activity {
     private final Queue<JSONObject> midiQueue = new ArrayDeque<>();
     private final Handler mainHandler = new Handler(Looper.getMainLooper());
     private boolean demoMode;
+    private boolean autoPlayMode;
+    /** Test rig: preselect an input source ('midi' | 'mic' | 'virtual'). */
+    private String forceInput;
 
     // Re-runs as long as the activity is resumed; a no-op when the queue dries up
     // (the timers die with onDestroy).
@@ -88,6 +91,11 @@ public class MainActivity extends Activity {
 
         Intent intent = getIntent();
         demoMode = intent != null && intent.getBooleanExtra("demoMidi", false);
+        autoPlayMode = intent != null && intent.getBooleanExtra("autoPlay", false);
+        String forced = intent != null ? intent.getStringExtra("input") : null;
+        if ("midi".equals(forced) || "mic".equals(forced) || "virtual".equals(forced)) {
+            forceInput = forced;
+        }
 
         final WebViewAssetLoader loader = new WebViewAssetLoader.Builder()
                 .setDomain(DOMAIN)
@@ -107,6 +115,22 @@ public class MainActivity extends Activity {
                 android.util.Log.i("DoinuBridge", "page finished: " + url);
                 // Re-sync the device list once the page (and the shim) are ready.
                 scanMidiDevices();
+                // autoPlay mode: the app plays the pending notes itself through the
+                // shim (perfect-score bot) — the clean way to complete lessons on an
+                // emulator, with NO external notes mixed in.
+                if (autoPlayMode) {
+                    webView.evaluateJavascript(
+                            "window.__doinuSetAutoplay && window.__doinuSetAutoplay(true)", null);
+                }
+                // Seed a locked input source (test rig), then reload so the app's
+                // bootstrap picks it up — the module script runs before this callback.
+                if (forceInput != null) {
+                    android.util.Log.i("DoinuBridge", "forcing input: " + forceInput);
+                    final String seed = forceInput;
+                    forceInput = null;
+                    webView.evaluateJavascript(
+                            "localStorage.setItem('doinu.input','" + seed + "'); location.reload()", null);
+                }
             }
         });
 

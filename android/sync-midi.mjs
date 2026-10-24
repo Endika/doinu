@@ -120,6 +120,12 @@ const midiShim = `<script>
   // Debug/testing handle: proves the app subscribed and lets tests inject notes.
   window.__doinuGetMidiInput = function () { return midiInput; };
 
+  // Android demo rig: turn on app-side autoplay (plays pending notes itself).
+  window.__doinuSetAutoplay = function (on) {
+    window.__DOINU_AUTOPLAY = !!on;
+    console.log('[doinu-midi] autoplay', window.__DOINU_AUTOPLAY);
+  };
+
   if (document.readyState === 'loading') {
     document.addEventListener('DOMContentLoaded', syncHint);
   } else {
