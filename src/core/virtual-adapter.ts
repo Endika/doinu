@@ -20,9 +20,38 @@ export const VIRTUAL_KEY_LOW = 36
 export const VIRTUAL_KEY_HIGH = 96
 
 /**
+ * The midi note under a 2D pointer position on the drawn keyboard.
+ *
+ * Black keys are drawn only across the TOP 60% of the keyboard height (`Keyboard`
+ * paints them at `h * 0.6`); a tap in the bottom band of a black-key column sits
+ * on the white key that continues underneath. Area-based preference keeps black
+ * keys winning inside their own visual region while never stealing taps below.
+ */
+export function noteForKeyPoint(
+  x: number,
+  y: number,
+  width: number,
+  height: number,
+  midiLow = VIRTUAL_KEY_LOW,
+  midiHigh = VIRTUAL_KEY_HIGH,
+): number | null {
+  let best: { midi: number; area: number } | null = null
+  for (let midi = midiLow; midi <= midiHigh; midi++) {
+    const rect = keyRect(midi, width, midiLow, midiHigh)
+    if (!rect) continue
+    if (x < rect.x || x >= rect.x + rect.width) continue
+    const keyHeight = rect.isBlack ? height * 0.6 : height
+    if (y < 0 || y >= keyHeight) continue
+    const area = rect.width * keyHeight
+    if (!best || area < best.area) best = { midi, area }
+  }
+  return best ? best.midi : null
+}
+
+/**
  * The midi note under horizontal position `x` on a keyboard drawn across
- * `width` CSS pixels. Smallest rect wins so a black key over its neighbours
- * takes precedence. Returns null when the point misses every key.
+ * `width` CSS pixels, ignoring height (legacy helper). Smallest rect wins so a
+ * black key over its neighbours takes precedence.
  */
 export function noteForKeyX(
   x: number,
@@ -106,9 +135,13 @@ export class VirtualInputAdapter implements InputAdapter {
   private pointerDown(e: PointerEvent): void {
     e.preventDefault()
     const note = this.noteAt(e)
+    const cv = this.canvas
+    const cr = cv ? cv.getBoundingClientRect() : null
     console.log(
-      '[doinu-keys] down ptr=' + e.pointerId + ' client=(' + Math.round(e.clientX) + ',' + Math.round(e.clientY) +
-        ') note=' + note,
+      '[doinu-keys] down ptr=' + e.pointerId + ' client=(' + Math.round(e.clientX) + ',' +
+        Math.round(e.clientY) + ') bmp=' + (cv ? cv.width + 'x' + cv.height : '-') +
+        ' css=' + (cr ? Math.round(cr.width) + 'x' + Math.round(cr.height) :
+        '-') + ' rectTop=' + (cr ? Math.round(cr.top) : '-') + ' note=' + note,
     )
     if (note === null) return
     this.held.set(e.pointerId, note)
@@ -146,7 +179,8 @@ export class VirtualInputAdapter implements InputAdapter {
     if (!canvas) return null
     const rect = canvas.getBoundingClientRect()
     const x = e.clientX - rect.left
-    return noteForKeyX(x, canvas.width, this.low, this.high)
+    const y = e.clientY - rect.top
+    return noteForKeyPoint(x, y, canvas.width, canvas.height, this.low, this.high)
   }
 
   private emit(note: number, type: InputEvent['type']): void {
