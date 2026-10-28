@@ -9,12 +9,16 @@
  * (F# with the finger of F, Bb with the finger of A) — that is how these
  * positions are actually played.
  *
- * Phrases that leave a single position (a one-octave scale, a tune that reaches
- * high Do, an arpeggio) are numbered like a scale instead: 1-2-3-1-2-3-4-5 for
- * major, and 1-2-3-4-1-2-3-4 when the fourth degree is a black key (F major).
+ * A phrase that does not fit one position keeps the position that covers the
+ * most of its notes, and every note outside it stays unmarked: one hand
+ * position cannot cover them, and where the hand shifts is a choice for the
+ * teacher (or for authored data).
  *
- * Leaps that reach past the five-finger window are left unmarked: one hand
- * position cannot cover them, and the hand shift is a choice for the teacher.
+ * Scales are the one exception, and only when the caller says the phrase is a
+ * scale (`{ scale: true }`, used by ScaleMode): a stepwise line is then numbered
+ * with the scale pattern, 1-2-3-1-2-3-4-5 for major and 1-2-3-4-1-2-3-4 when
+ * the fourth degree is a black key (F major). A song or melody that only looks
+ * stepwise is not fingered that way, because its pitches come in melody order.
  *
  * Left hand (`leftHandFingers`): a five-finger position is the mirror image of
  * the right hand (the thumb is the *highest* finger, so 1<->5, 2<->4), but a
@@ -49,10 +53,12 @@ function windowFinger(
     return index < 0 ? undefined : index + 1
   }
   // A black key borrows a neighbouring white key: the one below it (F# with the
-  // finger of F) unless that white key is itself in the phrase — then the hand
+  // finger of F) unless only that white key is in the phrase — then the hand
   // has already spent that finger and the key above is the free one (Bb next to
-  // A takes the finger of B).
-  const order = phrase.has(midi - 1) ? [midi + 1, midi - 1] : [midi - 1, midi + 1]
+  // A takes the finger of B). With both neighbours in the phrase it keeps the
+  // one below, so it never shares the finger of the key above (E-D#-E: 5-4-5).
+  const upperFirst = phrase.has(midi - 1) && !phrase.has(midi + 1)
+  const order = upperFirst ? [midi + 1, midi - 1] : [midi - 1, midi + 1]
   for (const white of order) {
     const index = keys.indexOf(white)
     if (index >= 0) return index + 1
@@ -114,19 +120,18 @@ function cAtOrBelow(midi: number): number {
   return midi - ((((midi - 60) % 12) + 12) % 12)
 }
 
-/** Number of white keys in the inclusive span, i.e. the diatonic distance + 1. */
-function whiteSpan(low: number, high: number): number {
-  let n = 0
-  for (let m = low; m <= high; m++) if (isWhiteMidi(m)) n++
-  return n
-}
-
 /** How a phrase was fingered: the hand shape decides how the left hand reads it. */
 type Fingering =
   | { kind: 'position' | 'leaps'; fingers: (number | undefined)[] }
   | { kind: 'scale'; fingers: (number | undefined)[]; degrees: (number | undefined)[] }
 
-function fingerPhrase(notes: number[]): Fingering {
+/** Options for the fingering functions. */
+export interface FingeringOptions {
+  /** The phrase is a scale (ScaleMode): number a stepwise line with the scale pattern. */
+  scale?: boolean
+}
+
+function fingerPhrase(notes: number[], options: FingeringOptions): Fingering {
   const pitched = notes.filter((n) => Number.isInteger(n) && n > 0)
   if (pitched.length === 0) return { kind: 'position', fingers: notes.map(() => undefined) }
 
@@ -147,8 +152,9 @@ function fingerPhrase(notes: number[]): Fingering {
   const unique = uniqueSorted(pitched)
   const whiteFourth = unique[3] === undefined ? true : isWhiteMidi(unique[3])
 
-  // 2. A line that leaves the position: number it like a scale.
-  if (isStepwise(unique)) {
+  // 2. A scale that leaves the position: number it with the scale pattern. Only
+  //    for real scales; a melody's pitches are not played in scale order.
+  if (options.scale && isStepwise(unique)) {
     const degree = new Map<number, number>()
     unique.forEach((midi, i) => degree.set(midi, i + 1))
     const degrees = notes.map((n) => degree.get(n))
@@ -159,35 +165,64 @@ function fingerPhrase(notes: number[]): Fingering {
     }
   }
 
-  // 3. Leaps, broken chords and arpeggios: one finger per white key from the
-  //    lowest note. Anything past the fifth white key needs a hand shift that the
-  //    shape alone does not decide, so it stays unmarked.
-  return {
-    kind: 'leaps',
-    fingers: notes.map((n) => {
-      if (!Number.isInteger(n) || n <= 0) return undefined
-      const white = isWhiteMidi(n) ? n : phrase.has(n - 1) ? n + 1 : n - 1
-      const span = whiteSpan(anchored, white)
-      return span >= 1 && span <= 5 ? span : undefined
-    }),
+  // 3. Anything else (leaps, broken chords, melodies wider than five keys): keep
+  //    the one five-finger position that covers the most notes and number it.
+  //    Notes outside it need a hand shift that the shape alone does not decide,
+  //    so they stay unmarked.
+  const keys = bestWindow(pitched, phrase, cAtOrBelow(lowest), anchored)
+  return { kind: 'leaps', fingers: notes.map((n) => windowFinger(keys, n, phrase)) }
+}
+
+/**
+ * The five-finger window that gives a finger to the most notes of the phrase.
+ * Ties go to a window whose thumb key is played, then to the C position, then
+ * to the lowest window.
+ */
+function bestWindow(
+  pitched: number[],
+  phrase: ReadonlySet<number>,
+  cPosition: number,
+  anchored: number,
+): number[] {
+  const highest = Math.max(...pitched)
+  const lows = [cPosition]
+  for (let m = anchored; m <= highest; m++) if (isWhiteMidi(m) && m !== cPosition) lows.push(m)
+  let best = fiveWhiteKeys(cPosition)
+  let bestCount = -1
+  for (const low of lows) {
+    const keys = fiveWhiteKeys(low)
+    // Two points per covered note, one more when the thumb sits on a played key.
+    const covered = pitched.filter((n) => windowFinger(keys, n, phrase) !== undefined).length
+    const count = covered * 2 + (phrase.has(keys[0]) ? 1 : 0)
+    if (count > bestCount) {
+      best = keys
+      bestCount = count
+    }
   }
+  return best
 }
 
 /**
  * Suggested right-hand finger for every note in `notes` (same order, same
  * length). Returns undefined where the phrase gives no honest answer.
  */
-export function autoFingers(notes: number[]): (number | undefined)[] {
-  return fingerPhrase(notes).fingers
+export function autoFingers(
+  notes: number[],
+  options: FingeringOptions = {},
+): (number | undefined)[] {
+  return fingerPhrase(notes, options).fingers
 }
 
 /**
  * Suggested left-hand finger for every note in `notes` (same order, same
  * length). Five-finger positions and leaps are the mirror image of the right
- * hand; scales use the left-hand scale pattern.
+ * hand; scales (`{ scale: true }`) use the left-hand scale pattern.
  */
-export function leftHandFingers(notes: number[]): (number | undefined)[] {
-  const fingering = fingerPhrase(notes)
+export function leftHandFingers(
+  notes: number[],
+  options: FingeringOptions = {},
+): (number | undefined)[] {
+  const fingering = fingerPhrase(notes, options)
   if (fingering.kind === 'scale') {
     return fingering.degrees.map((d) => (d === undefined ? undefined : leftScaleFinger(d)))
   }

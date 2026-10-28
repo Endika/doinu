@@ -25,7 +25,7 @@ export const CURRICULUM: Exercise[] = [
     title: 'Twinkle Twinkle (Opening)',
     bpm: 70,
     notes: [60, 60, 67, 67, 69, 69, 67], // C C G G A A G
-    fingers: [1, 1, 5, 5, 5, 5, 5], // thumb on Do, little finger shifted up for La
+    fingers: [1, 1, 4, 4, 5, 5, 4], // the usual beginner fingering: the hand sits on C-A
     passAccuracy: 0.9,
   },
   {

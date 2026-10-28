@@ -26,7 +26,7 @@ export class ScaleMode implements Mode {
     const notes = descending ? [...ascending, ...ascending.slice(0, -1).reverse()] : ascending
 
     const beatMs = 60000 / bpm
-    const fingers = autoFingers(notes)
+    const fingers = autoFingers(notes, { scale: true })
     const targets: Target[] = notes.map((midi, i) => ({
       id: `n${i}`,
       midi,
