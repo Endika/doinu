@@ -14,6 +14,14 @@ export interface SynthOptions {
    * Defaults to setTimeout.
    */
   schedule?: (fn: () => void, delayMs: number) => void
+  /**
+   * Optional sample player. When it has a note ready it plays it and returns
+   * true, and the oscillator is skipped; otherwise the oscillator plays.
+   */
+  sampler?: {
+    noteOn(ctx: AudioContext, midi: number, velocity: number): boolean
+    noteOff(midi: number): void
+  }
 }
 
 interface Voice {
@@ -30,12 +38,14 @@ export class Synth {
   private ctx: AudioContext | null = null
   private started = false
   private readonly voices = new Map<number, Voice>()
+  private readonly sampler: SynthOptions['sampler']
 
   constructor(opts: SynthOptions = {}) {
     this.createContext =
       opts.createContext ??
       (typeof AudioContext !== 'undefined' ? () => new AudioContext() : () => null)
     this.schedule = opts.schedule ?? ((fn, ms) => setTimeout(fn, ms))
+    this.sampler = opts.sampler
   }
 
   /** Lazily create the AudioContext on first use (needs a user gesture in browsers). Safe no-op if unavailable. */
@@ -53,6 +63,7 @@ export class Synth {
     const ctx = this.ctx
     if (!ctx) return
     this.noteOff(midi)
+    if (this.sampler?.noteOn(ctx, midi, velocity)) return
 
     const osc = ctx.createOscillator()
     const gain = ctx.createGain()
@@ -73,6 +84,7 @@ export class Synth {
 
   /** Stop the voice for this midi. */
   noteOff(midi: number): void {
+    this.sampler?.noteOff(midi)
     const ctx = this.ctx
     const voice = this.voices.get(midi)
     if (!ctx || !voice) return

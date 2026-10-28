@@ -47,3 +47,51 @@ describe('Synth without an audio context (node-safe)', () => {
     expect(done).toBe(true)
   })
 })
+
+describe('Synth sampler hook', () => {
+  function fakeContext() {
+    const oscillators: number[] = []
+    const ctx = {
+      currentTime: 0,
+      destination: {},
+      resume() {},
+      createGain: () => ({
+        gain: {
+          value: 0,
+          setValueAtTime() {},
+          linearRampToValueAtTime() {},
+          cancelScheduledValues() {},
+        },
+        connect() {},
+      }),
+      createOscillator() {
+        oscillators.push(0)
+        return { type: '', frequency: { value: 0 }, connect() {}, start() {}, stop() {} }
+      },
+    }
+    return { ctx: ctx as unknown as AudioContext, oscillators }
+  }
+
+  it('plays the oscillator when the sampler declines and skips it when the sampler plays', () => {
+    const f = fakeContext()
+    const ready = new Set<number>()
+    const calls: string[] = []
+    const s = new Synth({
+      createContext: () => f.ctx,
+      sampler: {
+        noteOn: (_ctx, midi) => {
+          calls.push(`on:${midi}`)
+          return ready.has(midi)
+        },
+        noteOff: (midi) => calls.push(`off:${midi}`),
+      },
+    })
+    s.noteOn(60)
+    expect(f.oscillators).toHaveLength(1)
+    ready.add(60)
+    s.noteOn(60)
+    expect(f.oscillators).toHaveLength(1)
+    s.noteOff(60)
+    expect(calls).toEqual(['off:60', 'on:60', 'off:60', 'on:60', 'off:60'])
+  })
+})

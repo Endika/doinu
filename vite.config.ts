@@ -16,6 +16,12 @@ export default defineConfig({
     VitePWA({
       registerType: 'autoUpdate',
       includeAssets: ['favicon.svg', 'favicon.ico', 'apple-touch-icon-180x180.png'],
+      workbox: {
+        // The default precache is js/css/html. Include the piano MP3s so an
+        // installed PWA still has them offline. Each file is well under the
+        // workbox size cap (~25 KB).
+        globPatterns: ['**/*.{js,css,html,mp3}'],
+      },
       manifest: {
         name: 'Doinu',
         short_name: 'Doinu',

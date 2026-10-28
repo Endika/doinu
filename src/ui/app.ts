@@ -21,6 +21,8 @@ import {
 import { scoreRhythm, beatTimes } from '../modes/rhythm'
 import type { Mode } from '../modes/mode'
 import { Synth } from '../audio/synth'
+import { Sampler } from '../audio/sampler'
+import { PIANO_SAMPLES } from '../audio/piano-map.generated'
 import { CURRICULUM, type Exercise } from '../content/curriculum'
 import { SONGS, type Song } from '../content/songs'
 import { STUDIES } from '../content/studies'
@@ -409,7 +411,7 @@ export function bootstrap(): void {
   // Audio feedback: a single synth, driven by the RAW selected adapter so every
   // key press sounds. The engine subscribes separately via its own wrapped
   // (song-time) adapter inside runChart — the two listeners coexist.
-  const synth = new Synth()
+  const synth = new Synth({ sampler: new Sampler(PIANO_SAMPLES) })
   selected.onEvent((e) =>
     e.type === InputEventType.On ? synth.noteOn(e.note) : synth.noteOff(e.note),
   )
