@@ -16,6 +16,13 @@ describe('adapter selection', () => {
     expect(selectAdapter({ hasWebMidi: true }, 'midi').capabilities.source).toBe(InputSource.Midi)
     expect(selectAdapter({ hasWebMidi: false }, 'midi').capabilities.source).toBe(InputSource.Mic)
   })
+  it('honours the on-screen keyboard preference, with or without Web MIDI', () => {
+    const withMidi = selectAdapter({ hasWebMidi: true }, 'virtual')
+    const withoutMidi = selectAdapter({ hasWebMidi: false }, 'virtual')
+    expect(withMidi.capabilities.source).toBe(InputSource.Virtual)
+    expect(withoutMidi.capabilities.source).toBe(InputSource.Virtual)
+    expect(withMidi.capabilities.polyphonic).toBe(true)
+  })
 })
 
 describe('waitEnabled', () => {
