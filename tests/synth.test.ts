@@ -94,4 +94,55 @@ describe('Synth sampler hook', () => {
     s.noteOff(60)
     expect(calls).toEqual(['off:60', 'on:60', 'off:60', 'on:60', 'off:60'])
   })
+
+  it('preload hands the notes to the sampler and waits for them', async () => {
+    const f = fakeContext()
+    const asked: number[][] = []
+    let finish = (): void => {}
+    const s = new Synth({
+      createContext: () => f.ctx,
+      schedule: () => {}, // the time cap never fires here
+      sampler: {
+        noteOn: () => false,
+        noteOff: () => {},
+        preload: (_ctx, midis) => {
+          asked.push([...midis])
+          return new Promise<void>((r) => (finish = r))
+        },
+      },
+    })
+    let done = false
+    const p = s.preload([60, 64]).then(() => (done = true))
+    await Promise.resolve()
+    expect(asked).toEqual([[60, 64]])
+    expect(done).toBe(false)
+    finish()
+    await p
+    expect(done).toBe(true)
+  })
+
+  it('preload stops waiting after maxWaitMs so a slow network never blocks a piece', async () => {
+    const f = fakeContext()
+    const timers: { fn: () => void; ms: number }[] = []
+    const s = new Synth({
+      createContext: () => f.ctx,
+      schedule: (fn, ms) => timers.push({ fn, ms }),
+      sampler: {
+        noteOn: () => false,
+        noteOff: () => {},
+        preload: () => new Promise<void>(() => {}),
+      },
+    })
+    const p = s.preload([60], 1500)
+    expect(timers.map((t) => t.ms)).toEqual([1500])
+    timers[0].fn()
+    await expect(p).resolves.toBeUndefined()
+  })
+
+  it('preload resolves at once without a sampler or an audio context', async () => {
+    await expect(new Synth({ createContext: () => null }).preload([60])).resolves.toBeUndefined()
+    await expect(
+      new Synth({ createContext: () => fakeContext().ctx }).preload([60]),
+    ).resolves.toBeUndefined()
+  })
 })

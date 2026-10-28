@@ -178,6 +178,8 @@ interface ExerciseDeps {
   keysCanvas: HTMLCanvasElement | null
   status: HTMLElement | null
   selected: SelectedAdapter
+  /** Get these notes' sounds ready as a chart starts (the lead-in covers the load). */
+  preload?: (midis: number[]) => void
 }
 
 /**
@@ -197,6 +199,7 @@ function runChart(
 ): () => void {
   const { stageCanvas, keysCanvas, status, selected } = deps
   const chart = mode.buildChart()
+  deps.preload?.(chart.targets.map((t) => t.midi))
 
   sizeCanvas(stageCanvas)
   sizeCanvas(keysCanvas)
@@ -266,6 +269,7 @@ function runChartWaiting(
 ): () => void {
   const { stageCanvas, keysCanvas, status, selected } = deps
   const chart = mode.buildChart()
+  deps.preload?.(chart.targets.map((t) => t.midi))
 
   sizeCanvas(stageCanvas)
   sizeCanvas(keysCanvas)
@@ -486,7 +490,13 @@ export function bootstrap(): void {
   const store = new MetricsStore(window.localStorage, undefined, () => {
     if (status) status.textContent = t('st.saveFailed')
   })
-  const deps: ExerciseDeps = { stageCanvas, keysCanvas, status, selected }
+  const deps: ExerciseDeps = {
+    stageCanvas,
+    keysCanvas,
+    status,
+    selected,
+    preload: (midis) => void synth.preload(midis),
+  }
 
   // Pick the freezing or the free-falling playback per the wait setting.
   const runPlayback = (
@@ -740,7 +750,10 @@ export function bootstrap(): void {
     backBtn?.classList.remove('hidden')
 
     rafId = requestAnimationFrame(loop)
-    playRound()
+    // Load every phrase's notes first so the demo and the child's answer sound alike.
+    void s.preload(ECHO_PHRASES.flatMap((p) => p.notes)).then(() => {
+      if (running) playRound()
+    })
   }
 
   /**
@@ -888,7 +901,9 @@ export function bootstrap(): void {
     backBtn?.classList.remove('hidden')
 
     rafId = requestAnimationFrame(loop)
-    playRound()
+    void s.preload(MEMORY_NOTES).then(() => {
+      if (running) playRound()
+    })
   }
 
   /**
@@ -1018,7 +1033,10 @@ export function bootstrap(): void {
     const playTarget = (): void => s.playSequence([{ midi: game.target, durMs: 800 }])
 
     if (d.status) d.status.textContent = t('st.listen')
-    playTarget()
+    // Load the notes it can pick first, so every demo note is the piano sample.
+    void s.preload(NOTE_FIND_NOTES).then(() => {
+      if (running) playTarget()
+    })
 
     d.selected.onEvent((e) => {
       if (!running) return
