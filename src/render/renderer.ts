@@ -157,6 +157,44 @@ export class Renderer {
       ctx.stroke()
     }
     ctx.restore()
+
+    if (t.finger !== undefined) {
+      // Ride just above the leading edge: that keeps the number next to the key
+      // it belongs to, and keeps it on screen as soon as the note enters — on a
+      // tall tablet display a long bar's centre is still far above the viewport.
+      const size = Math.min(width * 0.95, Math.max(12, height * 0.8), 28)
+      if (size >= 10 && bottomY > 0) {
+        const centreY = Math.min(bottomY - size * 0.75, canvasHeight - size * 0.75)
+        if (centreY > size * 0.5) {
+          this.drawFinger(ctx, t.finger, x + width / 2, centreY, size)
+        }
+      }
+    }
+  }
+
+  /**
+   * The finger number, drawn on the falling bar. A white digit with a dark
+   * outline stays readable on every pitch colour.
+   */
+  private drawFinger(
+    ctx: CanvasRenderingContext2D,
+    finger: number,
+    cx: number,
+    cy: number,
+    size: number,
+  ): void {
+    const label = String(finger)
+    ctx.save()
+    ctx.font = `800 ${Math.round(size)}px system-ui, -apple-system, 'Segoe UI', Roboto, sans-serif`
+    ctx.textAlign = 'center'
+    ctx.textBaseline = 'middle'
+    ctx.lineJoin = 'round'
+    ctx.lineWidth = Math.max(3, size * 0.3)
+    ctx.strokeStyle = 'rgba(28, 16, 58, 0.92)'
+    ctx.strokeText(label, cx, cy)
+    ctx.fillStyle = '#ffffff'
+    ctx.fillText(label, cx, cy)
+    ctx.restore()
   }
 
   private drawHitLine(ctx: CanvasRenderingContext2D, canvasWidth: number): void {

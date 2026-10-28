@@ -1,6 +1,7 @@
 import { Hand, type Chart, type Target } from '../engine/chart'
 import type { Summary } from '../engine/scoring'
 import type { Mode, Verdict } from './mode'
+import { autoFingers } from '../core/fingering'
 
 /**
  * A chord exercise: the learner plays each chord's notes TOGETHER, one chord per
@@ -23,6 +24,8 @@ export class ChordMode implements Mode {
     const beatMs = 60000 / this.spec.bpm
     const targets: Target[] = []
     this.spec.chords.forEach((chord, i) => {
+      // Each chord is its own hand shape, so finger it on its own.
+      const fingers = autoFingers(chord)
       chord.forEach((midi, j) => {
         targets.push({
           id: `c${i}-${j}`,
@@ -30,6 +33,7 @@ export class ChordMode implements Mode {
           startMs: i * beatMs,
           durMs: beatMs,
           hand: Hand.Right,
+          finger: fingers[j],
         })
       })
     })
