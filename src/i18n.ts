@@ -1,15 +1,16 @@
 /**
- * Minimal flat-dictionary i18n for the Doinu PWA (English + Spanish).
+ * Minimal flat-dictionary i18n for the Doinu PWA (English + Spanish + Chinese).
  *
  * Node-safe: no DOM access at import time. `resolveLocale` is pure (testable
  * without a browser); `createI18n` holds a mutable locale and a `t(key)` lookup.
- * Emojis live inside the strings so the UI keeps its playful labels in both
- * languages.
+ * Emojis live inside the strings so the UI keeps its playful labels in every
+ * language.
  */
 
 export enum Locale {
   En = 'en',
   Es = 'es',
+  Zh = 'zh',
 }
 
 const MESSAGES = {
@@ -89,12 +90,21 @@ const MESSAGES = {
     'st.level': 'Level',
     'st.best': 'Best',
     'st.tap': 'Tap!',
+    'progress.attempts': 'attempts',
+    'progress.best': 'best',
+    'progress.latest': 'latest',
+    'progress.find': 'find',
+    'progress.ms': 'ms',
+    'progress.bpm': 'bpm',
+    'state.locked': 'locked',
+    'state.inProgress': 'inProgress',
+    'state.mastered': 'mastered',
     'praise.amazing': 'Amazing!',
     'praise.great': 'Great!',
     'praise.good': 'Good try!',
     'praise.keep': 'Keep going!',
     'praise.again': "Let's try again! 🙈",
-    'lang.toggle': 'ES',
+    'lang.toggle': '中文',
   },
   es: {
     'menu.sub': '¡A jugar! 🎶',
@@ -172,6 +182,15 @@ const MESSAGES = {
     'st.level': 'Nivel',
     'st.best': 'Mejor',
     'st.tap': '¡Toca!',
+    'progress.attempts': 'intentos',
+    'progress.best': 'mejor',
+    'progress.latest': 'último',
+    'progress.find': 'encontrar',
+    'progress.ms': 'ms',
+    'progress.bpm': 'ppm',
+    'state.locked': 'Bloqueado',
+    'state.inProgress': 'En progreso',
+    'state.mastered': 'Dominado',
     'praise.amazing': '¡Increíble!',
     'praise.great': '¡Genial!',
     'praise.good': '¡Bien!',
@@ -179,18 +198,112 @@ const MESSAGES = {
     'praise.again': '¡Inténtalo otra vez! 🙈',
     'lang.toggle': 'EN',
   },
+  zh: {
+    'menu.sub': '一起弹起来！🎶',
+    'act.melody': '🎵 旋律',
+    'act.songs': '🎶 歌曲',
+    'act.import': '📂 导入 MIDI',
+    'act.practice': '🐢 慢慢练（等待）',
+    'act.progress': '📊 学习记录',
+    'act.echo': '🔁 跟着弹',
+    'act.memory': '🧠 记一记',
+    'act.notefind': '🔎 找音符',
+    'act.ear': '👂 听音弹奏',
+    'act.rhythm': '🥁 打节拍',
+    'act.scaleup': '🪜 音阶上行',
+    'act.scaleupdown': '🎢 音阶上下行',
+    'act.free': '✨ 自由弹',
+    'act.path': '🗺️ 学习路线',
+    'act.compose': '🎤 编一段',
+    'nav.back': '← 返回',
+    'songs.title': '🎶 歌曲',
+    'songs.pick': '选一首歌 🎹',
+    'songs.studies': '🎹 音阶与练习曲',
+    'compose.title': '🎤 我的旋律',
+    'compose.sub': '编一首自己的曲子 🎹',
+    'compose.recordNew': '● 新录一段',
+    'compose.recording': '开始弹你的旋律！🎤',
+    'compose.stop': '■ 停止',
+    'compose.namePrompt': '给这段旋律起个名字？',
+    'compose.save': '💾 保存',
+    'compose.cancel': '✗ 取消',
+    'compose.empty': '录下你的第一段旋律吧！🎶',
+    'compose.practice': '▶ 练习',
+    'compose.delete': '🗑',
+    'compose.defaultName': '我的旋律',
+    'path.title': '🗺️ 学习路线',
+    'path.sub': '一步一步学 🎹',
+    'path.soon': '即将开放',
+    'path.midiOnly': '需要 MIDI 键盘 🎹',
+    'progress.title': '📊 学习记录',
+    'progress.sub': '你的进步 🌟',
+    'progress.empty': '弹一会儿，这里就会出现记录 ✨',
+    'hand.play': '▶ 播放',
+    'hand.right': '👉 右手',
+    'hand.left': '👈 左手',
+    'hand.both': '🙌 双手',
+    'st.listen': '听一听… 👂',
+    'st.yourTurn': '轮到你了！🎶',
+    'st.watch': '看好了… 👀',
+    'st.find': '找到这个键！🔎',
+    'st.read': '读这个音符 🎼',
+    'st.yes': '对了！✅',
+    'st.tryAgainEar': '再来一次 👂',
+    'st.getReady': '准备好… 🥁',
+    'st.freePlay': '自由弹——按任意琴键',
+    'st.midiError': '读不了这个 MIDI 文件 🙈',
+    'st.noMidi': '用不了 MIDI 键盘。试试麦克风吧。',
+    'st.micTapToEnable': '点「开启麦克风」就开始 🎤',
+    'st.micListening': '在听了…弹一个音吧！🎤',
+    'st.micDenied': '麦克风被拒绝了——允许后就能玩，也可以插上 MIDI 键盘。',
+    'st.saveFailed': '保存失败，请再试一次。',
+    'input.micEnable': '🎤 开启麦克风',
+    'input.useMic': '🎤 用麦克风',
+    'input.useMidi': '🎹 用 MIDI 键盘',
+    'wait.on': '🐢 等待音符：开',
+    'wait.off': '🐰 等待音符：关',
+    'act.mictest': '🎤 麦克风测试',
+    'mictest.title': '🎤 麦克风测试',
+    'mictest.sub': '看看麦克风听到了什么 🎧',
+    'mictest.quiet': '很安静 🤫',
+    'mictest.noise': '有声音，但听不清音 🌫️',
+    'mictest.detecting': '听出来了 ✅',
+    'mictest.sensitivity': '灵敏度',
+    'mictest.calibrate': '🤫 校准（安静 2 秒）',
+    'mictest.calibrating': '保持安静… 🤫',
+    'st.level': '关',
+    'st.best': '最好',
+    'st.tap': '拍！',
+    'progress.attempts': '次',
+    'progress.best': '最好',
+    'progress.latest': '最近',
+    'progress.find': '找音',
+    'progress.ms': '毫秒',
+    'progress.bpm': '拍/分',
+    'state.locked': '未解锁',
+    'state.inProgress': '进行中',
+    'state.mastered': '已掌握',
+    'praise.amazing': '太棒了！',
+    'praise.great': '真好！',
+    'praise.good': '不错哦！',
+    'praise.keep': '继续加油！',
+    'praise.again': '再来一次吧！🙈',
+    'lang.toggle': 'ES',
+  },
 } as const
 
 export type MessageKey = keyof typeof MESSAGES.en
 
 /**
- * Pure locale resolution. A valid stored override ('en' | 'es') wins; otherwise
- * a navigator language starting with 'es' selects Spanish, and everything else
+ * Pure locale resolution. A valid stored override wins; otherwise a navigator
+ * language selects Chinese or Spanish when it matches, and everything else
  * (including an unknown stored value or absent navigator) falls back to English.
  */
 export function resolveLocale(navLang: string | undefined, stored: string | null): Locale {
-  if (stored === Locale.En || stored === Locale.Es) return stored
-  if (navLang?.toLowerCase().startsWith('es')) return Locale.Es
+  if (stored === Locale.En || stored === Locale.Es || stored === Locale.Zh) return stored
+  const lang = navLang?.toLowerCase() ?? ''
+  if (lang.startsWith('zh')) return Locale.Zh
+  if (lang.startsWith('es')) return Locale.Es
   return Locale.En
 }
 
