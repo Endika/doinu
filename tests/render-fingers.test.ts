@@ -79,4 +79,15 @@ describe('renderer: finger labels', () => {
     })
     expect(texts.map((t) => t.text).sort()).toEqual(['1', '5'])
   })
+
+  it('drops the number once the bar has almost left through the hit line', () => {
+    const { ctx, texts } = stubContext()
+    const renderer = new Renderer(ctx, { hitLineY: 600, pxPerMs: 0.2 })
+    // A 100 px bar, 90 px past the hit line: only its last 10 px are on screen.
+    renderer.draw({ nowMs: 450, targets: [target({ finger: 5 })], activeNotes: new Set() })
+    expect(texts).toEqual([])
+    // Still half on screen: the number stays.
+    renderer.draw({ nowMs: 250, targets: [target({ finger: 5 })], activeNotes: new Set() })
+    expect(texts.map((t) => t.text)).toEqual(['5'])
+  })
 })

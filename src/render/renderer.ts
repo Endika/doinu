@@ -165,7 +165,9 @@ export class Renderer {
       const size = Math.min(width * 0.95, Math.max(12, height * 0.8), 28)
       if (size >= 10 && bottomY > 0) {
         const centreY = Math.min(bottomY - size * 0.75, canvasHeight - size * 0.75)
-        if (centreY > size * 0.5) {
+        // Once the bar has almost left through the hit line, drop the number
+        // with it instead of leaving it floating over the keyboard edge.
+        if (centreY > size * 0.5 && centreY >= topY + size * 0.5) {
           this.drawFinger(ctx, t.finger, x + width / 2, centreY, size)
         }
       }
