@@ -1,10 +1,12 @@
 /**
  * Grand-piano sample playback for `Synth`.
  *
- * Nothing is fetched or decoded up front. The first `noteOn` for a midi starts
- * loading that one file and returns false, so `Synth` sounds its oscillator;
- * once the buffer is decoded, later presses of that key play the sample. Only
- * the notes actually played are ever held in memory.
+ * Nothing is fetched or decoded at startup. When a chart or a listen-and-repeat
+ * exercise starts, `preload` loads just the notes it uses, so the whole piece
+ * plays with one timbre. Any other key loads on its first `noteOn`, which
+ * returns false so `Synth` sounds its oscillator for that one press. Only the
+ * notes actually used are ever held in memory, and a missing or undecodable
+ * file simply keeps the oscillator for that note.
  */
 
 /** Peak level of the `Synth` oscillator at full velocity; samples are scaled to match it. */
@@ -45,8 +47,8 @@ const fetchBytes = (url: string): Promise<ArrayBuffer> =>
 
 export class Sampler {
   private readonly samples = new Map<number, Sample>()
-  /** Notes whose file was requested (loading, loaded or failed); never requested twice. */
-  private readonly requested = new Set<number>()
+  /** Notes whose file was requested, by midi; settles once it is loaded or has failed. */
+  private readonly requested = new Map<number, Promise<void>>()
   private readonly voices = new Map<number, Voice>()
 
   /**
@@ -64,13 +66,26 @@ export class Sampler {
   }
 
   /**
+   * Load and decode these notes (each file at most once). Resolves when every
+   * one is ready or has failed; it never rejects.
+   */
+  preload(ctx: AudioContext, midis: Iterable<number>): Promise<void> {
+    const pending: Promise<void>[] = []
+    for (const midi of new Set(midis)) {
+      const loading = this.request(ctx, midi)
+      if (loading) pending.push(loading)
+    }
+    return Promise.all(pending).then(() => undefined)
+  }
+
+  /**
    * Play this midi's sample and return true, or start loading it and return
    * false so the caller plays its own fallback.
    */
   noteOn(ctx: AudioContext, midi: number, velocity: number): boolean {
     const sample = this.samples.get(midi)
     if (!sample) {
-      this.request(ctx, midi)
+      void this.request(ctx, midi)
       return false
     }
     this.noteOff(midi)
@@ -109,11 +124,13 @@ export class Sampler {
     source.stop(now + RELEASE_S)
   }
 
-  private request(ctx: AudioContext, midi: number): void {
+  /** Start loading this midi's file once; returns the pending load, if there is a file. */
+  private request(ctx: AudioContext, midi: number): Promise<void> | undefined {
     const url = this.urls[midi]
-    if (url === undefined || this.requested.has(midi)) return
-    this.requested.add(midi)
-    this.load(url)
+    if (url === undefined) return undefined
+    const existing = this.requested.get(midi)
+    if (existing) return existing
+    const loading = this.load(url)
       .then((bytes) => ctx.decodeAudioData(bytes))
       .then((buffer) => {
         const peak = bufferPeak(buffer)
@@ -122,5 +139,7 @@ export class Sampler {
       .catch(() => {
         // Missing or undecodable file: this note keeps using the oscillator.
       })
+    this.requested.set(midi, loading)
+    return loading
   }
 }

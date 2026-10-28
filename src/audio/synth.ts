@@ -21,6 +21,7 @@ export interface SynthOptions {
   sampler?: {
     noteOn(ctx: AudioContext, midi: number, velocity: number): boolean
     noteOff(midi: number): void
+    preload?(ctx: AudioContext, midis: Iterable<number>): Promise<void>
   }
 }
 
@@ -55,6 +56,22 @@ export class Synth {
       this.ctx = this.createContext()
     }
     void this.ctx?.resume?.()
+  }
+
+  /**
+   * Ask the sampler to get these notes ready before a piece starts. Resolves
+   * once they are ready or have failed, or after `maxWaitMs`, so a slow network
+   * never holds an exercise back (late notes still arrive and are used).
+   */
+  preload(midis: Iterable<number>, maxWaitMs = 3000): Promise<void> {
+    this.resume()
+    const ctx = this.ctx
+    if (!ctx || !this.sampler?.preload) return Promise.resolve()
+    const loading = this.sampler.preload(ctx, midis)
+    return new Promise((resolve) => {
+      void loading.then(() => resolve())
+      this.schedule(() => resolve(), maxWaitMs)
+    })
   }
 
   /** Start a voice for this midi (no-op if no context). */

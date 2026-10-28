@@ -117,4 +117,46 @@ describe('Sampler', () => {
     expect(f.stopped).toHaveLength(1)
     expect(() => s.noteOff(60)).not.toThrow()
   })
+
+  it('preloads the notes of a piece so even the first press is the sample', async () => {
+    const loaded: string[] = []
+    const f = fakeContext(fakeBuffer([[0.5]]))
+    const s = new Sampler({ 60: 'c4.mp3', 62: 'd4.mp3', 64: 'e4.mp3' }, (url) => {
+      loaded.push(url)
+      return Promise.resolve(new ArrayBuffer(8))
+    })
+    await s.preload(f.ctx, [60, 62, 60, 62])
+    expect(loaded).toEqual(['c4.mp3', 'd4.mp3'])
+    expect(f.decodes()).toBe(2)
+    expect(s.noteOn(f.ctx, 60, 1)).toBe(true)
+    expect(s.noteOn(f.ctx, 62, 1)).toBe(true)
+    // A key outside the piece still loads on demand.
+    expect(s.noteOn(f.ctx, 64, 1)).toBe(false)
+    expect(loaded).toEqual(['c4.mp3', 'd4.mp3', 'e4.mp3'])
+  })
+
+  it('never loads a file twice when a preload overlaps an on-demand load', async () => {
+    const loaded: string[] = []
+    const f = fakeContext(fakeBuffer([[0.5]]))
+    const s = new Sampler({ 60: 'c4.mp3' }, (url) => {
+      loaded.push(url)
+      return Promise.resolve(new ArrayBuffer(8))
+    })
+    expect(s.noteOn(f.ctx, 60, 1)).toBe(false)
+    await Promise.all([s.preload(f.ctx, [60]), s.preload(f.ctx, [60])])
+    expect(loaded).toEqual(['c4.mp3'])
+    expect(s.isReady(60)).toBe(true)
+  })
+
+  it('resolves a preload even when a file is missing or fails', async () => {
+    const f = fakeContext(fakeBuffer([[0.5]]))
+    const s = new Sampler({ 60: 'c4.mp3', 61: 'bad.mp3' }, (url) =>
+      url === 'bad.mp3' ? Promise.reject(new Error('404')) : Promise.resolve(new ArrayBuffer(8)),
+    )
+    await expect(s.preload(f.ctx, [60, 61, 99])).resolves.toBeUndefined()
+    expect(s.isReady(60)).toBe(true)
+    // The failed and unmapped notes fall back to the oscillator.
+    expect(s.noteOn(f.ctx, 61, 1)).toBe(false)
+    expect(s.noteOn(f.ctx, 99, 1)).toBe(false)
+  })
 })
