@@ -12,6 +12,8 @@ import { C4, D4, E4, F4, G4, A4, B4, Bb4, C5, A3, B3, Ds4, Gs4, G3 } from '../co
 export interface MelodyNote {
   midi: number
   dur: number
+  /** Optional authored finger (1 = thumb … 5 = little finger). */
+  finger?: number
 }
 
 /** A left-hand note with explicit start (beats) so it aligns with the melody. */
@@ -19,6 +21,8 @@ export interface HandNote {
   midi: number
   startBeat: number
   dur: number
+  /** Optional authored finger (1 = thumb … 5 = little finger). */
+  finger?: number
 }
 
 export interface Song {
