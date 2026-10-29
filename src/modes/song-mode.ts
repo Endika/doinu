@@ -2,6 +2,7 @@ import { Hand, type Chart, type Target } from '../engine/chart'
 import type { Summary } from '../engine/scoring'
 import type { Mode, Verdict } from './mode'
 import type { Song } from '../content/songs'
+import { autoFingers, mirrorFingers } from '../core/fingering'
 
 export enum HandSelection {
   Right = 'R',
@@ -44,31 +45,36 @@ export class SongMode implements Mode {
     let id = 0
 
     if (this.selection === HandSelection.Right || this.selection === HandSelection.Both) {
+      const fingers = autoFingers(this.song.right.map((n) => n.midi))
       let beat = 0
-      for (const n of this.song.right) {
+      this.song.right.forEach((n, i) => {
         targets.push({
           id: `r${id++}`,
           midi: n.midi,
           startMs: beat * beatMs,
           durMs: n.dur * beatMs,
           hand: Hand.Right,
+          finger: n.finger ?? fingers[i],
         })
         beat += n.dur
-      }
+      })
     }
     if (
       (this.selection === HandSelection.Left || this.selection === HandSelection.Both) &&
       this.song.left
     ) {
-      for (const n of this.song.left) {
+      // The left hand reads the same way, but its thumb is the highest finger.
+      const fingers = mirrorFingers(autoFingers(this.song.left.map((n) => n.midi)))
+      this.song.left.forEach((n, i) => {
         targets.push({
           id: `l${id++}`,
           midi: n.midi,
           startMs: n.startBeat * beatMs,
           durMs: n.dur * beatMs,
           hand: Hand.Left,
+          finger: n.finger ?? fingers[i],
         })
-      }
+      })
     }
 
     targets.sort((a, b) => a.startMs - b.startMs)
