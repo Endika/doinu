@@ -271,7 +271,7 @@ const MESSAGES = {
     'mictest.sensitivity': '灵敏度',
     'mictest.calibrate': '🤫 校准（安静 2 秒）',
     'mictest.calibrating': '保持安静… 🤫',
-    'st.level': '关',
+    'st.level': '关卡',
     'st.best': '最好',
     'st.tap': '拍！',
     'progress.attempts': '次',
