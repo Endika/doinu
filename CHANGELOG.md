@@ -1,5 +1,17 @@
 # Changelog
 
+## [0.17.0](https://github.com/Endika/doinu/compare/v0.16.2...v0.17.0) (2026-10-30)
+
+
+### Features
+
+* finger-number markers on falling notes ([f9cac07](https://github.com/Endika/doinu/commit/f9cac07e3d810d70246fadbf132f1c46dec60d8e))
+
+
+### Bug Fixes
+
+* **fingering:** keep songs and melodies in one five-finger position ([bf97f2f](https://github.com/Endika/doinu/commit/bf97f2ff7b0f04b5db525c22d27e500251cc081f))
+
 ## [0.16.2](https://github.com/Endika/doinu/compare/v0.16.1...v0.16.2) (2026-10-30)
 
 
