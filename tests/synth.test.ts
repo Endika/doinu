@@ -95,6 +95,25 @@ describe('Synth sampler hook', () => {
     expect(calls).toEqual(['off:60', 'on:60', 'off:60', 'on:60', 'off:60'])
   })
 
+  it('click always uses the oscillator, even when the sampler has the note', () => {
+    const f = fakeContext()
+    const calls: string[] = []
+    const s = new Synth({
+      createContext: () => f.ctx,
+      sampler: {
+        noteOn: (_ctx, midi) => {
+          calls.push(`on:${midi}`)
+          return true
+        },
+        noteOff: (midi) => calls.push(`off:${midi}`),
+      },
+    })
+    s.click(84, 100)
+    s.click(84, 100)
+    expect(f.oscillators).toHaveLength(2)
+    expect(calls).toEqual([])
+  })
+
   it('preload hands the notes to the sampler and waits for them', async () => {
     const f = fakeContext()
     const asked: number[][] = []

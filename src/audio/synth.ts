@@ -81,7 +81,26 @@ export class Synth {
     if (!ctx) return
     this.noteOff(midi)
     if (this.sampler?.noteOn(ctx, midi, velocity)) return
+    this.voices.set(midi, this.startOscillator(ctx, midi, velocity))
+  }
 
+  /**
+   * A short metronome click. It always uses the oscillator, never a piano
+   * sample, so every click sounds the same, and it is kept apart from the
+   * notes being played.
+   */
+  click(midi: number, durMs: number): void {
+    this.resume()
+    const ctx = this.ctx
+    if (!ctx) return
+    const { osc, gain } = this.startOscillator(ctx, midi, 1)
+    const end = ctx.currentTime + durMs / 1000
+    gain.gain.setValueAtTime(0.3, end)
+    gain.gain.linearRampToValueAtTime(0, end + RELEASE_S)
+    osc.stop(end + RELEASE_S)
+  }
+
+  private startOscillator(ctx: AudioContext, midi: number, velocity: number): Voice {
     const osc = ctx.createOscillator()
     const gain = ctx.createGain()
     osc.type = 'triangle'
@@ -95,8 +114,7 @@ export class Synth {
     osc.connect(gain)
     gain.connect(ctx.destination)
     osc.start(now)
-
-    this.voices.set(midi, { osc, gain })
+    return { osc, gain }
   }
 
   /** Stop the voice for this midi. */

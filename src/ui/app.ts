@@ -1160,7 +1160,7 @@ export function bootstrap(): void {
           window.setTimeout(
             () => {
               if (!running) return
-              s.playSequence([{ midi: CLICK_MIDI, durMs: 100 }])
+              s.click(CLICK_MIDI, 100)
               if (d.status) d.status.textContent = `${t('st.tap')} ${i + 1} / ${BEATS} 🥁`
             },
             Math.max(0, beatTime - performance.now()),
