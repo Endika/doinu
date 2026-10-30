@@ -1,5 +1,12 @@
 # Changelog
 
+## [0.16.2](https://github.com/Endika/doinu/compare/v0.16.1...v0.16.2) (2026-10-30)
+
+
+### Bug Fixes
+
+* **deps:** bump serialize-javascript to 7.1.3 ([a2cfc52](https://github.com/Endika/doinu/commit/a2cfc52f7239cbeb5ec8bc0691835338d34ec2ac))
+
 ## [0.16.1](https://github.com/Endika/doinu/compare/v0.16.0...v0.16.1) (2026-09-24)
 
 
