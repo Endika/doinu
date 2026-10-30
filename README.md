@@ -70,3 +70,8 @@ npm run build      # production build (dist/)
 ## License
 
 MIT — see [LICENSE](LICENSE).
+
+The piano samples in `public/samples/piano` are not under MIT. They come from the
+_Musyng Kite_ soundfont via [midi-js-soundfonts](https://github.com/gleitz/midi-js-soundfonts)
+and are licensed [CC BY-SA 3.0](https://creativecommons.org/licenses/by-sa/3.0/);
+see [public/samples/README.md](public/samples/README.md) for the attribution.
