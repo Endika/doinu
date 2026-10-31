@@ -202,6 +202,7 @@ const MESSAGES = {
   },
   zh: {
     'menu.sub': '一起弹起来！🎶',
+    'finger.legend': '手指编号：1 大拇指 · 2 食指 · 3 中指 · 4 无名指 · 5 小指',
     'act.melody': '🎵 旋律',
     'act.songs': '🎶 歌曲',
     'act.import': '📂 导入 MIDI',
