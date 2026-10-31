@@ -96,6 +96,11 @@ export class Keyboard {
     this.cfg = cfg
   }
 
+  /** Every midi note on this keyboard, low to high (the keys a player can press). */
+  notes(): number[] {
+    return midiRange(this.cfg.midiLow, this.cfg.midiHigh)
+  }
+
   /**
    * @param activeNotes   midi notes currently held down.
    * @param expectedNotes midi notes whose hit window is open right now (the keys

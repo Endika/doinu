@@ -599,6 +599,8 @@ export function bootstrap(): void {
     if (stageCtx && d.stageCanvas)
       stageCtx.clearRect(0, 0, d.stageCanvas.width, d.stageCanvas.height)
     const keyboard = new Keyboard(keysCtx)
+    // Load every key on screen so the first press of each sounds like the next.
+    void s.preload(keyboard.notes())
 
     if (d.status) d.status.textContent = t('st.freePlay')
 
@@ -936,6 +938,8 @@ export function bootstrap(): void {
     if (stageCtx && d.stageCanvas)
       stageCtx.clearRect(0, 0, d.stageCanvas.width, d.stageCanvas.height)
     const keyboard = new Keyboard(keysCtx)
+    // Load the notes it can ask for, so every correct press is the piano sample.
+    void s.preload(NOTE_FIND_NOTES)
 
     if (d.status) d.status.textContent = t('st.find')
 
@@ -1464,6 +1468,8 @@ export function bootstrap(): void {
     const keysCtx = deps.keysCanvas?.getContext('2d') ?? null
     const staff = new Staff(stageCtx)
     const keyboard = new Keyboard(keysCtx)
+    // Load the notes this lesson can show, so every answer sounds the same.
+    void synth.preload(bank)
 
     if (status) status.textContent = t('st.read')
 
@@ -1767,6 +1773,8 @@ export function bootstrap(): void {
     if (stageCtx && deps.stageCanvas)
       stageCtx.clearRect(0, 0, deps.stageCanvas.width, deps.stageCanvas.height)
     const keyboard = new Keyboard(keysCtx)
+    // Load every key on screen so the recording keeps one timbre from the start.
+    void synth.preload(keyboard.notes())
 
     if (status) status.textContent = t('compose.recording')
 
