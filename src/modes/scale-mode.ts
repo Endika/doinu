@@ -1,5 +1,6 @@
 import { Hand, type Chart, type Target } from '../engine/chart'
 import type { Summary } from '../engine/scoring'
+import { autoFingers } from '../core/fingering'
 import type { Mode, Verdict } from './mode'
 
 /** Semitone offsets of a one-octave major scale, ascending including the octave. */
@@ -25,12 +26,14 @@ export class ScaleMode implements Mode {
     const notes = descending ? [...ascending, ...ascending.slice(0, -1).reverse()] : ascending
 
     const beatMs = 60000 / bpm
+    const fingers = autoFingers(notes, { scale: true })
     const targets: Target[] = notes.map((midi, i) => ({
       id: `n${i}`,
       midi,
       startMs: i * beatMs,
       durMs: beatMs,
       hand: Hand.Right,
+      finger: fingers[i],
     }))
     return { bpm, targets }
   }

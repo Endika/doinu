@@ -16,6 +16,7 @@ export enum Locale {
 const MESSAGES = {
   en: {
     'menu.sub': "Let's play! 🎶",
+    'finger.legend': 'Finger numbers: 1 thumb · 2 index · 3 middle · 4 ring · 5 pinky',
     'act.melody': '🎵 Melody',
     'act.songs': '🎶 Songs',
     'act.import': '📂 Load MIDI',
@@ -108,6 +109,7 @@ const MESSAGES = {
   },
   es: {
     'menu.sub': '¡A jugar! 🎶',
+    'finger.legend': 'Dedos: 1 pulgar · 2 índice · 3 corazón · 4 anular · 5 meñique',
     'act.melody': '🎵 Melodía',
     'act.songs': '🎶 Canciones',
     'act.import': '📂 Cargar MIDI',
