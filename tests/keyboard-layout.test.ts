@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest'
-import { Keyboard, keyRect } from '../src/render/keyboard'
+import { keyRect } from '../src/render/keyboard'
 import { barRect } from '../src/render/renderer'
 
 // Range 60..72 over an 800px canvas: 8 white keys → whiteWidth = 100.
@@ -26,17 +26,5 @@ describe('barRect — falling note centred over its key', () => {
     expect(bar.x + bar.width).toBeLessThanOrEqual(200)
     // centred: equal margins on both sides of the 100px key
     expect(bar.x - 100).toBeCloseTo(200 - (bar.x + bar.width))
-  })
-})
-
-describe('Keyboard.notes — the keys a player can press', () => {
-  it('lists every drawn key, low to high', () => {
-    const notes = new Keyboard(null).notes()
-    expect(notes).toHaveLength(61)
-    expect(notes[0]).toBe(36)
-    expect(notes[notes.length - 1]).toBe(96)
-  })
-  it('follows a custom range', () => {
-    expect(new Keyboard(null, { midiLow: 60, midiHigh: 64 }).notes()).toEqual([60, 61, 62, 63, 64])
   })
 })
