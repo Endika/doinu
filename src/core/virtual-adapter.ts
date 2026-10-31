@@ -1,6 +1,5 @@
 import { InputSource, type Capabilities, type InputAdapter } from './input-adapter'
 import { InputEventType, type InputEvent } from './events'
-import { keyRect } from '../render/keyboard'
 
 /**
  * The tappable on-screen keyboard.
@@ -12,46 +11,21 @@ import { keyRect } from '../render/keyboard'
  * with no physical instrument at all.
  *
  * Layout note: pointer coordinates are CSS pixels relative to the canvas's
- * bounding rect, so hit-testing uses the rect's CSS size, not the bitmap size
- * (`canvas.width` / `canvas.height`), which can differ after a resize.
+ * bounding rect, so the hit-test gets the rect's CSS size, not the bitmap size
+ * (`canvas.width` / `canvas.height`), which can differ after a resize. Which
+ * key sits under a point is up to the `KeyHitTest` passed in.
  */
-
-export const VIRTUAL_KEY_LOW = 36
-export const VIRTUAL_KEY_HIGH = 96
 
 /**
- * The midi note under a 2D pointer position on the drawn keyboard.
- *
- * Black keys are drawn only across the TOP 60% of the keyboard height (`Keyboard`
- * paints them at `h * 0.6`); a tap in the bottom band of a black-key column sits
- * on the white key that continues underneath. Area-based preference keeps black
- * keys winning inside their own visual region while never stealing taps below.
+ * Maps a point on the keys canvas (CSS pixels, relative to its top-left corner)
+ * to the midi note drawn there, or null if no key is under it. The keyboard
+ * renderer provides it, so the adapter never has to know the key layout.
  */
-export function noteForKeyPoint(
-  x: number,
-  y: number,
-  width: number,
-  height: number,
-  midiLow = VIRTUAL_KEY_LOW,
-  midiHigh = VIRTUAL_KEY_HIGH,
-): number | null {
-  let best: { midi: number; area: number } | null = null
-  for (let midi = midiLow; midi <= midiHigh; midi++) {
-    const rect = keyRect(midi, width, midiLow, midiHigh)
-    if (!rect) continue
-    if (x < rect.x || x >= rect.x + rect.width) continue
-    const keyHeight = rect.isBlack ? height * 0.6 : height
-    if (y < 0 || y >= keyHeight) continue
-    const area = rect.width * keyHeight
-    if (!best || area < best.area) best = { midi, area }
-  }
-  return best ? best.midi : null
-}
+export type KeyHitTest = (x: number, y: number, width: number, height: number) => number | null
 
 export class VirtualInputAdapter implements InputAdapter {
   capabilities: Capabilities = { polyphonic: true, source: InputSource.Virtual }
-  private readonly low: number
-  private readonly high: number
+  private readonly hitTest: KeyHitTest
   private readonly canvasId: string
   private listeners: ((e: InputEvent) => void)[] = []
   private canvas: HTMLCanvasElement | null = null
@@ -62,10 +36,9 @@ export class VirtualInputAdapter implements InputAdapter {
   private readonly onMove: (e: PointerEvent) => void
   private readonly onUp: (e: PointerEvent) => void
 
-  constructor(canvasId = 'keys', midiLow = VIRTUAL_KEY_LOW, midiHigh = VIRTUAL_KEY_HIGH) {
+  constructor(hitTest: KeyHitTest, canvasId = 'keys') {
+    this.hitTest = hitTest
     this.canvasId = canvasId
-    this.low = midiLow
-    this.high = midiHigh
     this.onDown = (e: PointerEvent) => this.pointerDown(e)
     this.onMove = (e: PointerEvent) => this.pointerMove(e)
     this.onUp = (e: PointerEvent) => this.pointerUp(e)
@@ -145,7 +118,7 @@ export class VirtualInputAdapter implements InputAdapter {
     const rect = canvas.getBoundingClientRect()
     const x = e.clientX - rect.left
     const y = e.clientY - rect.top
-    return noteForKeyPoint(x, y, rect.width, rect.height, this.low, this.high)
+    return this.hitTest(x, y, rect.width, rect.height)
   }
 
   private emit(note: number, type: InputEvent['type']): void {

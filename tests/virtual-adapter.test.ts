@@ -1,33 +1,11 @@
 import { describe, it, expect, afterEach, vi } from 'vitest'
-import { noteForKeyPoint, VirtualInputAdapter } from '../src/core/virtual-adapter'
+import { VirtualInputAdapter } from '../src/core/virtual-adapter'
+import { noteForKeyPoint } from '../src/render/keyboard'
 
 // Same white-key count as the renderer layout for 36..96: five octaves + C7.
 const W = 1080
 const H = 200
 const WW = W / 36
-
-describe('virtual keyboard hit-test (2D, matches what is drawn)', () => {
-  const blackCentre = WW - 0.3 * WW // inside the C# black key column
-
-  it('hits the black key inside its drawn region (top 60%)', () => {
-    expect(noteForKeyPoint(blackCentre, H * 0.2, W, H)).toBe(37)
-  })
-
-  it('hits the white key below the black key (bottom band)', () => {
-    // The black key only spans the top 60%; below it the white key continues.
-    expect(noteForKeyPoint(blackCentre, H * 0.9, W, H)).toBe(36)
-  })
-
-  it('hits the white key top area away from black columns', () => {
-    expect(noteForKeyPoint(WW * 1.6, H * 0.2, W, H)).toBe(38)
-  })
-
-  it('returns null outside the keyboard', () => {
-    expect(noteForKeyPoint(-1, H * 0.2, W, H)).toBeNull()
-    expect(noteForKeyPoint(W, H * 0.2, W, H)).toBeNull()
-    expect(noteForKeyPoint(WW / 2, H + 1, W, H)).toBeNull()
-  })
-})
 
 type Handler = (e: PointerEvent) => void
 
@@ -49,9 +27,12 @@ function fakeCanvas(cssW: number, cssH: number, bitmapW: number, bitmapH: number
   }
 }
 
-async function startAdapter(canvas: ReturnType<typeof fakeCanvas>) {
+async function startAdapter(
+  canvas: ReturnType<typeof fakeCanvas>,
+  hitTest: ConstructorParameters<typeof VirtualInputAdapter>[0] = noteForKeyPoint,
+) {
   vi.stubGlobal('document', { getElementById: () => canvas })
-  const adapter = new VirtualInputAdapter()
+  const adapter = new VirtualInputAdapter(hitTest)
   const got: string[] = []
   adapter.onEvent((e) => got.push(`${e.type}:${e.note}`))
   await adapter.start()
@@ -71,6 +52,26 @@ describe('virtual keyboard adapter', () => {
     canvas.fire('pointerdown', 1, WW * 2.5, H * 0.9)
     canvas.fire('pointerup', 1, WW * 2.5, H * 0.9)
     expect(got).toEqual(['on:40', 'off:40'])
+  })
+
+  it('asks the injected hit-test which key is under the pointer', async () => {
+    const canvas = fakeCanvas(W, H, W * 2, H * 2)
+    const calls: number[][] = []
+    const { got } = await startAdapter(canvas, (x, y, width, height) => {
+      calls.push([x, y, width, height])
+      return 61
+    })
+    canvas.fire('pointerdown', 1, 5, 7)
+    expect(calls).toEqual([[5, 7, W, H]])
+    expect(got).toEqual(['on:61'])
+  })
+
+  it('ignores a press that misses every key', async () => {
+    const canvas = fakeCanvas(W, H, W, H)
+    const { got } = await startAdapter(canvas, () => null)
+    canvas.fire('pointerdown', 1, 5, 7)
+    canvas.fire('pointerup', 1, 5, 7)
+    expect(got).toEqual([])
   })
 
   it('stop() sends a note-off for every note still held', async () => {

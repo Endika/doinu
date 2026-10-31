@@ -7,7 +7,7 @@ import { perfClock, offsetClock, PausableClock, type Clock } from '../core/clock
 import { Engine } from '../engine/engine'
 import type { Summary } from '../engine/scoring'
 import { Renderer, leadInMs, expectedNotesAt } from '../render/renderer'
-import { Keyboard } from '../render/keyboard'
+import { Keyboard, noteForKeyPoint } from '../render/keyboard'
 import { Staff } from '../render/staff'
 import { MelodyMode } from '../modes/melody-mode'
 import { ChordMode } from '../modes/chord-mode'
@@ -131,7 +131,7 @@ export type InputPref = 'midi' | 'mic' | 'virtual'
  * touches no DOM; only its start() does.
  */
 export function selectAdapter(env: Env, pref?: InputPref | null): SelectedAdapter {
-  if (pref === 'virtual') return new VirtualInputAdapter()
+  if (pref === 'virtual') return new VirtualInputAdapter(noteForKeyPoint)
   if (pref === 'mic') return new MicInputAdapter()
   if (pref === 'midi') return env.hasWebMidi ? new MidiInputAdapter() : new MicInputAdapter()
   return env.hasWebMidi ? new MidiInputAdapter() : new MicInputAdapter()
