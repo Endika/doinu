@@ -380,7 +380,8 @@ export function bootstrap(): void {
   }
 
   langToggle?.addEventListener('click', () => {
-    const next: Locale = i18n.locale === Locale.En ? Locale.Es : Locale.En
+    const next: Locale =
+      i18n.locale === Locale.En ? Locale.Zh : i18n.locale === Locale.Zh ? Locale.Es : Locale.En
     i18n.set(next)
     window.localStorage.setItem(LANG_STORAGE_KEY, next)
     applyI18n()
@@ -499,7 +500,7 @@ export function bootstrap(): void {
     const stateFor = (id: string): MasteryState =>
       map.find((e) => e.exerciseId === id)?.state ?? MasteryState.Locked
     const report = buildProgressReport(CURRICULUM, (id) => store.sessionsFor(id), stateFor)
-    renderProgressReport(reportEl, report)
+    renderProgressReport(reportEl, report, t)
   }
 
   refreshReport()
