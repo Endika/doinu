@@ -14,7 +14,15 @@ export interface KeyboardConfig {
   midiHigh: number
 }
 
-const DEFAULT_CONFIG: KeyboardConfig = { midiLow: 36, midiHigh: 96 }
+/** Lowest and highest midi note on the drawn keyboard (C2..C7). */
+export const KEYBOARD_LOW = 36
+export const KEYBOARD_HIGH = 96
+
+/** Black keys are drawn at this fraction of a white key's width and height. */
+const BLACK_KEY_WIDTH = 0.6
+const BLACK_KEY_HEIGHT = 0.6
+
+const DEFAULT_CONFIG: KeyboardConfig = { midiLow: KEYBOARD_LOW, midiHigh: KEYBOARD_HIGH }
 
 /** Inclusive list of midi notes in the configured range. */
 export function midiRange(low: number, high: number): number[] {
@@ -79,12 +87,42 @@ export function keyRect(
   // A black key sits between the white key below it (midi-1) and the next.
   const leftWhite = whites.find((k) => k.midi === midi - 1)
   if (!leftWhite) return null
-  const blackWidth = whiteWidth * 0.6
+  const blackWidth = whiteWidth * BLACK_KEY_WIDTH
   return {
     x: (leftWhite.index + 1) * whiteWidth - blackWidth / 2,
     width: blackWidth,
     isBlack: true,
   }
+}
+
+/**
+ * The midi note under a 2D point on the drawn keyboard, or null if the point
+ * misses every key. Uses `keyRect` and the same black-key height `Keyboard.draw`
+ * paints, so tap targets always match the drawn keys.
+ *
+ * Black keys only cover the top part of the keyboard; a point in the bottom band
+ * of a black-key column sits on the white key that continues underneath. Where
+ * keys overlap, the smaller (black) key wins.
+ */
+export function noteForKeyPoint(
+  x: number,
+  y: number,
+  width: number,
+  height: number,
+  low = DEFAULT_CONFIG.midiLow,
+  high = DEFAULT_CONFIG.midiHigh,
+): number | null {
+  let best: { midi: number; area: number } | null = null
+  for (let midi = low; midi <= high; midi++) {
+    const rect = keyRect(midi, width, low, high)
+    if (!rect) continue
+    if (x < rect.x || x >= rect.x + rect.width) continue
+    const keyHeight = rect.isBlack ? height * BLACK_KEY_HEIGHT : height
+    if (y < 0 || y >= keyHeight) continue
+    const area = rect.width * keyHeight
+    if (!best || area < best.area) best = { midi, area }
+  }
+  return best ? best.midi : null
 }
 
 export class Keyboard {
@@ -117,8 +155,8 @@ export class Keyboard {
     if (whiteCount === 0) return
 
     const whiteWidth = w / whiteCount
-    const blackWidth = whiteWidth * 0.6
-    const blackHeight = h * 0.6
+    const blackWidth = whiteWidth * BLACK_KEY_WIDTH
+    const blackHeight = h * BLACK_KEY_HEIGHT
 
     // White keys first so black keys overlay them.
     for (const { midi, index } of whites) {

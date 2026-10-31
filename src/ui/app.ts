@@ -2,11 +2,12 @@ import { InputSource, type InputAdapter, type Capabilities } from '../core/input
 import { InputEventType, type InputEvent } from '../core/events'
 import { MidiInputAdapter } from '../core/midi-adapter'
 import { MicInputAdapter } from '../core/mic-adapter'
+import { VirtualInputAdapter } from '../core/virtual-adapter'
 import { perfClock, offsetClock, PausableClock, type Clock } from '../core/clock'
 import { Engine } from '../engine/engine'
 import type { Summary } from '../engine/scoring'
 import { Renderer, leadInMs, expectedNotesAt } from '../render/renderer'
-import { Keyboard } from '../render/keyboard'
+import { Keyboard, noteForKeyPoint } from '../render/keyboard'
 import { Staff } from '../render/staff'
 import { MelodyMode } from '../modes/melody-mode'
 import { ChordMode } from '../modes/chord-mode'
@@ -121,7 +122,7 @@ export interface Env {
 // the call sites that select and thread the active adapter around.)
 export type SelectedAdapter = InputAdapter
 
-export type InputPref = 'midi' | 'mic'
+export type InputPref = 'midi' | 'mic' | 'virtual'
 
 /**
  * Pure adapter selection. A stored preference wins; otherwise auto: a MIDI
@@ -130,9 +131,22 @@ export type InputPref = 'midi' | 'mic'
  * touches no DOM; only its start() does.
  */
 export function selectAdapter(env: Env, pref?: InputPref | null): SelectedAdapter {
+  if (pref === 'virtual') return new VirtualInputAdapter(noteForKeyPoint)
   if (pref === 'mic') return new MicInputAdapter()
   if (pref === 'midi') return env.hasWebMidi ? new MidiInputAdapter() : new MicInputAdapter()
   return env.hasWebMidi ? new MidiInputAdapter() : new MicInputAdapter()
+}
+
+/**
+ * Pure: the input the toggle button switches to next. With Web MIDI the button
+ * cycles MIDI → microphone → on-screen keys → MIDI; without it, it switches
+ * between the microphone and the on-screen keys.
+ */
+export function nextInputPref(env: Env, current: InputPref): InputPref {
+  if (!env.hasWebMidi) return current === 'mic' ? 'virtual' : 'mic'
+  if (current === 'midi') return 'mic'
+  if (current === 'mic') return 'virtual'
+  return 'midi'
 }
 
 /** Whether to freeze the score until the right note is played. Default on; only
@@ -446,21 +460,29 @@ export function bootstrap(): void {
     })
   }
 
-  // Manual MIDI <-> microphone toggle, shown only when Web MIDI exists (a real
-  // choice). Switching is a rare, deliberate action → persist + reload, which
-  // avoids re-wiring the live listeners.
+  // Input source toggle: MIDI keyboard, microphone, and on-screen keys.
+  // Switching is a rare, deliberate action → persist + reload, which avoids
+  // re-wiring the live listeners.
   const inputToggle = document.getElementById('input-toggle')
   if (inputToggle) {
-    if (env.hasWebMidi) {
-      inputToggle.textContent = usingMic ? t('input.useMidi') : t('input.useMic')
-      inputToggle.classList.remove('hidden')
-      inputToggle.addEventListener('click', () => {
-        window.localStorage.setItem(INPUT_PREF_KEY, usingMic ? 'midi' : 'mic')
-        window.location.reload()
-      })
-    } else {
-      inputToggle.classList.add('hidden')
-    }
+    const labelFor = (next: InputPref): string =>
+      next === 'midi'
+        ? t('input.useMidi')
+        : next === 'mic'
+          ? t('input.useMic')
+          : t('input.useVirtual')
+    const current: InputPref =
+      selected.capabilities.source === InputSource.Mic
+        ? 'mic'
+        : selected.capabilities.source === InputSource.Midi
+          ? 'midi'
+          : 'virtual'
+    inputToggle.textContent = labelFor(nextInputPref(env, current))
+    inputToggle.classList.remove('hidden')
+    inputToggle.addEventListener('click', () => {
+      window.localStorage.setItem(INPUT_PREF_KEY, nextInputPref(env, current))
+      window.location.reload()
+    })
   }
 
   // "Wait for the right note" setting: when off, scores keep falling instead of
