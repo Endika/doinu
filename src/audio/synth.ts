@@ -14,6 +14,15 @@ export interface SynthOptions {
    * Defaults to setTimeout.
    */
   schedule?: (fn: () => void, delayMs: number) => void
+  /**
+   * Optional sample player. When it has a note ready it plays it and returns
+   * true, and the oscillator is skipped; otherwise the oscillator plays.
+   */
+  sampler?: {
+    noteOn(ctx: AudioContext, midi: number, velocity: number): boolean
+    noteOff(midi: number): void
+    preload?(ctx: AudioContext, midis: Iterable<number>): Promise<void>
+  }
 }
 
 interface Voice {
@@ -30,12 +39,14 @@ export class Synth {
   private ctx: AudioContext | null = null
   private started = false
   private readonly voices = new Map<number, Voice>()
+  private readonly sampler: SynthOptions['sampler']
 
   constructor(opts: SynthOptions = {}) {
     this.createContext =
       opts.createContext ??
       (typeof AudioContext !== 'undefined' ? () => new AudioContext() : () => null)
     this.schedule = opts.schedule ?? ((fn, ms) => setTimeout(fn, ms))
+    this.sampler = opts.sampler
   }
 
   /** Lazily create the AudioContext on first use (needs a user gesture in browsers). Safe no-op if unavailable. */
@@ -47,13 +58,49 @@ export class Synth {
     void this.ctx?.resume?.()
   }
 
+  /**
+   * Ask the sampler to get these notes ready before a piece starts. Resolves
+   * once they are ready or have failed, or after `maxWaitMs`, so a slow network
+   * never holds an exercise back (late notes still arrive and are used).
+   */
+  preload(midis: Iterable<number>, maxWaitMs = 3000): Promise<void> {
+    this.resume()
+    const ctx = this.ctx
+    if (!ctx || !this.sampler?.preload) return Promise.resolve()
+    const loading = this.sampler.preload(ctx, midis)
+    return new Promise((resolve) => {
+      void loading.then(() => resolve())
+      this.schedule(() => resolve(), maxWaitMs)
+    })
+  }
+
   /** Start a voice for this midi (no-op if no context). */
   noteOn(midi: number, velocity = 1): void {
     this.resume()
     const ctx = this.ctx
     if (!ctx) return
     this.noteOff(midi)
+    if (this.sampler?.noteOn(ctx, midi, velocity)) return
+    this.voices.set(midi, this.startOscillator(ctx, midi, velocity))
+  }
 
+  /**
+   * A short metronome click. It always uses the oscillator, never a piano
+   * sample, so every click sounds the same, and it is kept apart from the
+   * notes being played.
+   */
+  click(midi: number, durMs: number): void {
+    this.resume()
+    const ctx = this.ctx
+    if (!ctx) return
+    const { osc, gain } = this.startOscillator(ctx, midi, 1)
+    const end = ctx.currentTime + durMs / 1000
+    gain.gain.setValueAtTime(0.3, end)
+    gain.gain.linearRampToValueAtTime(0, end + RELEASE_S)
+    osc.stop(end + RELEASE_S)
+  }
+
+  private startOscillator(ctx: AudioContext, midi: number, velocity: number): Voice {
     const osc = ctx.createOscillator()
     const gain = ctx.createGain()
     osc.type = 'triangle'
@@ -67,12 +114,12 @@ export class Synth {
     osc.connect(gain)
     gain.connect(ctx.destination)
     osc.start(now)
-
-    this.voices.set(midi, { osc, gain })
+    return { osc, gain }
   }
 
   /** Stop the voice for this midi. */
   noteOff(midi: number): void {
+    this.sampler?.noteOff(midi)
     const ctx = this.ctx
     const voice = this.voices.get(midi)
     if (!ctx || !voice) return

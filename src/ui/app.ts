@@ -21,6 +21,8 @@ import {
 import { scoreRhythm, beatTimes } from '../modes/rhythm'
 import type { Mode } from '../modes/mode'
 import { Synth } from '../audio/synth'
+import { Sampler } from '../audio/sampler'
+import { PIANO_SAMPLES } from '../audio/piano-map.generated'
 import { CURRICULUM, type Exercise } from '../content/curriculum'
 import { SONGS, type Song } from '../content/songs'
 import { STUDIES } from '../content/studies'
@@ -176,6 +178,8 @@ interface ExerciseDeps {
   keysCanvas: HTMLCanvasElement | null
   status: HTMLElement | null
   selected: SelectedAdapter
+  /** Get these notes' sounds ready as a chart starts (the lead-in covers the load). */
+  preload?: (midis: number[]) => void
 }
 
 /**
@@ -195,6 +199,7 @@ function runChart(
 ): () => void {
   const { stageCanvas, keysCanvas, status, selected } = deps
   const chart = mode.buildChart()
+  deps.preload?.(chart.targets.map((t) => t.midi))
 
   sizeCanvas(stageCanvas)
   sizeCanvas(keysCanvas)
@@ -264,6 +269,7 @@ function runChartWaiting(
 ): () => void {
   const { stageCanvas, keysCanvas, status, selected } = deps
   const chart = mode.buildChart()
+  deps.preload?.(chart.targets.map((t) => t.midi))
 
   sizeCanvas(stageCanvas)
   sizeCanvas(keysCanvas)
@@ -409,7 +415,7 @@ export function bootstrap(): void {
   // Audio feedback: a single synth, driven by the RAW selected adapter so every
   // key press sounds. The engine subscribes separately via its own wrapped
   // (song-time) adapter inside runChart — the two listeners coexist.
-  const synth = new Synth()
+  const synth = new Synth({ sampler: new Sampler(PIANO_SAMPLES) })
   selected.onEvent((e) =>
     e.type === InputEventType.On ? synth.noteOn(e.note) : synth.noteOff(e.note),
   )
@@ -484,7 +490,13 @@ export function bootstrap(): void {
   const store = new MetricsStore(window.localStorage, undefined, () => {
     if (status) status.textContent = t('st.saveFailed')
   })
-  const deps: ExerciseDeps = { stageCanvas, keysCanvas, status, selected }
+  const deps: ExerciseDeps = {
+    stageCanvas,
+    keysCanvas,
+    status,
+    selected,
+    preload: (midis) => void synth.preload(midis),
+  }
 
   // Pick the freezing or the free-falling playback per the wait setting.
   const runPlayback = (
@@ -587,6 +599,8 @@ export function bootstrap(): void {
     if (stageCtx && d.stageCanvas)
       stageCtx.clearRect(0, 0, d.stageCanvas.width, d.stageCanvas.height)
     const keyboard = new Keyboard(keysCtx)
+    // Load every key on screen so the first press of each sounds like the next.
+    void s.preload(keyboard.notes())
 
     if (d.status) d.status.textContent = t('st.freePlay')
 
@@ -738,7 +752,10 @@ export function bootstrap(): void {
     backBtn?.classList.remove('hidden')
 
     rafId = requestAnimationFrame(loop)
-    playRound()
+    // Load every phrase's notes first so the demo and the child's answer sound alike.
+    void s.preload(ECHO_PHRASES.flatMap((p) => p.notes)).then(() => {
+      if (running) playRound()
+    })
   }
 
   /**
@@ -886,7 +903,9 @@ export function bootstrap(): void {
     backBtn?.classList.remove('hidden')
 
     rafId = requestAnimationFrame(loop)
-    playRound()
+    void s.preload(MEMORY_NOTES).then(() => {
+      if (running) playRound()
+    })
   }
 
   /**
@@ -919,6 +938,8 @@ export function bootstrap(): void {
     if (stageCtx && d.stageCanvas)
       stageCtx.clearRect(0, 0, d.stageCanvas.width, d.stageCanvas.height)
     const keyboard = new Keyboard(keysCtx)
+    // Load the notes it can ask for, so every correct press is the piano sample.
+    void s.preload(NOTE_FIND_NOTES)
 
     if (d.status) d.status.textContent = t('st.find')
 
@@ -1016,7 +1037,10 @@ export function bootstrap(): void {
     const playTarget = (): void => s.playSequence([{ midi: game.target, durMs: 800 }])
 
     if (d.status) d.status.textContent = t('st.listen')
-    playTarget()
+    // Load the notes it can pick first, so every demo note is the piano sample.
+    void s.preload(NOTE_FIND_NOTES).then(() => {
+      if (running) playTarget()
+    })
 
     d.selected.onEvent((e) => {
       if (!running) return
@@ -1140,7 +1164,7 @@ export function bootstrap(): void {
           window.setTimeout(
             () => {
               if (!running) return
-              s.playSequence([{ midi: CLICK_MIDI, durMs: 100 }])
+              s.click(CLICK_MIDI, 100)
               if (d.status) d.status.textContent = `${t('st.tap')} ${i + 1} / ${BEATS} 🥁`
             },
             Math.max(0, beatTime - performance.now()),
@@ -1444,6 +1468,8 @@ export function bootstrap(): void {
     const keysCtx = deps.keysCanvas?.getContext('2d') ?? null
     const staff = new Staff(stageCtx)
     const keyboard = new Keyboard(keysCtx)
+    // Load the notes this lesson can show, so every answer sounds the same.
+    void synth.preload(bank)
 
     if (status) status.textContent = t('st.read')
 
@@ -1747,6 +1773,8 @@ export function bootstrap(): void {
     if (stageCtx && deps.stageCanvas)
       stageCtx.clearRect(0, 0, deps.stageCanvas.width, deps.stageCanvas.height)
     const keyboard = new Keyboard(keysCtx)
+    // Load every key on screen so the recording keeps one timbre from the start.
+    void synth.preload(keyboard.notes())
 
     if (status) status.textContent = t('compose.recording')
 
