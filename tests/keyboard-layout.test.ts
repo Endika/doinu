@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest'
-import { keyRect, noteForKeyPoint, KEYBOARD_LOW, KEYBOARD_HIGH } from '../src/render/keyboard'
+import { Keyboard, keyRect, noteForKeyPoint, KEYBOARD_LOW, KEYBOARD_HIGH } from '../src/render/keyboard'
 import { barRect } from '../src/render/renderer'
 
 // Range 60..72 over an 800px canvas: 8 white keys → whiteWidth = 100.
@@ -69,5 +69,17 @@ describe('noteForKeyPoint — tap targets match the drawn keys', () => {
     // Range 60..72 over 800px: C#4 is drawn at x 70..130.
     expect(noteForKeyPoint(90, 10, 800, 100, 60, 72)).toBe(61)
     expect(noteForKeyPoint(90, 90, 800, 100, 60, 72)).toBe(60)
+  })
+})
+
+describe('Keyboard.notes — the keys a player can press', () => {
+  it('lists every drawn key, low to high', () => {
+    const notes = new Keyboard(null).notes()
+    expect(notes).toHaveLength(61)
+    expect(notes[0]).toBe(36)
+    expect(notes[notes.length - 1]).toBe(96)
+  })
+  it('follows a custom range', () => {
+    expect(new Keyboard(null, { midiLow: 60, midiHigh: 64 }).notes()).toEqual([60, 61, 62, 63, 64])
   })
 })
