@@ -1,5 +1,17 @@
 # Changelog
 
+## [0.18.0](https://github.com/Endika/doinu/compare/v0.17.0...v0.18.0) (2026-11-02)
+
+
+### Features
+
+* tappable on-screen keyboard ([b803b91](https://github.com/Endika/doinu/commit/b803b911e57ad48a782528d1dda6a85b7a9e2ca6))
+
+
+### Bug Fixes
+
+* **input:** let the toggle reach the microphone when Web MIDI exists ([9b50d03](https://github.com/Endika/doinu/commit/9b50d03c9ef1fbd0f018b0a7ef801c26f3e65443))
+
 ## [0.17.0](https://github.com/Endika/doinu/compare/v0.16.2...v0.17.0) (2026-10-30)
 
 
