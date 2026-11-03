@@ -1,5 +1,31 @@
 # Changelog
 
+## [0.19.0](https://github.com/Endika/doinu/compare/v0.18.0...v0.19.0) (2026-11-02)
+
+
+### Features
+
+* **audio:** preload the notes of free play, note find, reading and composing ([ca30760](https://github.com/Endika/doinu/commit/ca30760a6606b26f0eac042f7c5adc95f320b647))
+* **audio:** preload the notes of the current piece ([5575d8b](https://github.com/Endika/doinu/commit/5575d8b52b5aee32fe541fda9909947640194810))
+* grand-piano samples with an oscillator fallback ([cbddc49](https://github.com/Endika/doinu/commit/cbddc49a9bf0dbff003a5a98e31ca0f5af6a93f1))
+
+
+### Bug Fixes
+
+* **audio:** keep the metronome click on the oscillator ([bfef858](https://github.com/Endika/doinu/commit/bfef8584c0876ebc9621de7075dceae8e7e4308c))
+
+## [0.18.0](https://github.com/Endika/doinu/compare/v0.17.0...v0.18.0) (2026-11-02)
+
+
+### Features
+
+* tappable on-screen keyboard ([b803b91](https://github.com/Endika/doinu/commit/b803b911e57ad48a782528d1dda6a85b7a9e2ca6))
+
+
+### Bug Fixes
+
+* **input:** let the toggle reach the microphone when Web MIDI exists ([9b50d03](https://github.com/Endika/doinu/commit/9b50d03c9ef1fbd0f018b0a7ef801c26f3e65443))
+
 ## [0.17.0](https://github.com/Endika/doinu/compare/v0.16.2...v0.17.0) (2026-10-30)
 
 

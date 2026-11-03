@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest'
-import { selectAdapter, pickCurrentExerciseId, waitEnabled } from '../src/ui/app'
+import { selectAdapter, nextInputPref, pickCurrentExerciseId, waitEnabled } from '../src/ui/app'
 import { InputSource } from '../src/core/input-adapter'
 import { MasteryState } from '../src/progress/mastery'
 describe('adapter selection', () => {
@@ -15,6 +15,27 @@ describe('adapter selection', () => {
     expect(selectAdapter({ hasWebMidi: true }, 'mic').capabilities.source).toBe(InputSource.Mic)
     expect(selectAdapter({ hasWebMidi: true }, 'midi').capabilities.source).toBe(InputSource.Midi)
     expect(selectAdapter({ hasWebMidi: false }, 'midi').capabilities.source).toBe(InputSource.Mic)
+  })
+  it('honours the on-screen keyboard preference, with or without Web MIDI', () => {
+    const withMidi = selectAdapter({ hasWebMidi: true }, 'virtual')
+    const withoutMidi = selectAdapter({ hasWebMidi: false }, 'virtual')
+    expect(withMidi.capabilities.source).toBe(InputSource.Virtual)
+    expect(withoutMidi.capabilities.source).toBe(InputSource.Virtual)
+    expect(withMidi.capabilities.polyphonic).toBe(true)
+  })
+})
+
+describe('nextInputPref', () => {
+  it('cycles midi → mic → virtual → midi when Web MIDI exists', () => {
+    const env = { hasWebMidi: true }
+    expect(nextInputPref(env, 'midi')).toBe('mic')
+    expect(nextInputPref(env, 'mic')).toBe('virtual')
+    expect(nextInputPref(env, 'virtual')).toBe('midi')
+  })
+  it('switches mic ↔ virtual without Web MIDI', () => {
+    const env = { hasWebMidi: false }
+    expect(nextInputPref(env, 'mic')).toBe('virtual')
+    expect(nextInputPref(env, 'virtual')).toBe('mic')
   })
 })
 
