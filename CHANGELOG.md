@@ -1,5 +1,19 @@
 # Changelog
 
+## [0.20.0](https://github.com/Endika/doinu/compare/v0.19.0...v0.20.0) (2026-11-03)
+
+
+### Features
+
+* **i18n:** add Chinese UI ([f82601a](https://github.com/Endika/doinu/commit/f82601ad34252e059d7f2ca2492f105d74e321f5))
+* **i18n:** add the Chinese finger number legend ([f2e28f6](https://github.com/Endika/doinu/commit/f2e28f6a4de94c6edb5894675b2ee14194caffb7))
+* **i18n:** add the Chinese on-screen keys label ([ae6781f](https://github.com/Endika/doinu/commit/ae6781faf24445bfc45fbdc29f307ef238e5b54a))
+
+
+### Bug Fixes
+
+* **i18n:** use 关卡 for the Chinese level label ([752e04f](https://github.com/Endika/doinu/commit/752e04fecd2b90571d15531f4b97a3de9c2be2b0))
+
 ## [0.19.0](https://github.com/Endika/doinu/compare/v0.18.0...v0.19.0) (2026-11-02)
 
 
