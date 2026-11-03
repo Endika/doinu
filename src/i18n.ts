@@ -265,6 +265,7 @@ const MESSAGES = {
     'input.micEnable': '🎤 开启麦克风',
     'input.useMic': '🎤 用麦克风',
     'input.useMidi': '🎹 用 MIDI 键盘',
+    'input.useVirtual': '🎹 屏幕琴键',
     'wait.on': '🐢 等待音符：开',
     'wait.off': '🐰 等待音符：关',
     'act.mictest': '🎤 麦克风测试',
