@@ -1,5 +1,12 @@
 # Changelog
 
+## [0.20.1](https://github.com/Endika/doinu/compare/v0.20.0...v0.20.1) (2026-11-23)
+
+
+### Bug Fixes
+
+* **pwa:** precache the app again so installed apps update ([66401a3](https://github.com/Endika/doinu/commit/66401a397789166c2215141ba4fa1a9db4139573))
+
 ## [0.20.0](https://github.com/Endika/doinu/compare/v0.19.0...v0.20.0) (2026-11-03)
 
 
