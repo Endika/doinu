@@ -4,7 +4,7 @@
   "type": "module",
   "scripts": {
     "dev": "vite",
-    "build": "tsc && vite build",
+    "build": "tsc && vite build && node scripts/check-precache.mjs",
     "preview": "vite preview",
     "test": "vitest",
     "test:run": "vitest run",
@@ -33,6 +33,9 @@
     "vitest": "^5.1.0"
   },
   "overrides": {
-    "minimatch": "^11.0.1"
+    "minimatch": "^11.0.1",
+    "workbox-build": {
+      "glob": "^13.0.0"
+    }
   }
 }
